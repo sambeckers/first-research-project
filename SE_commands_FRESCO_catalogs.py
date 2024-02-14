@@ -7,7 +7,7 @@ Created on 16-11-23
 Generates strings of sextractor commands to run on the command line to generate catalogs for FRESCO
 """
 import os
-os.chdir('/Users/sam/Library/Mobile Documents/com~apple~CloudDocs/Astronomy Data Science MSc 2324 Yr 1/FRP/FRESCO')
+os.chdir('/Users/sam/FRESCO')
 
 # Open files with image names, weight names and catalog names:
 measurement_file = 'gds-sci-filenames.txt'
@@ -26,5 +26,5 @@ with open(catalog_file, 'r') as catalog_file:
 
 # Generate sextractor commands:
 for measurement, weight, catalog in zip(measurement_images, weight_images, catalog_names):
-    print(f'sex gds-grizli-v5.1-f444w-clear_drc_sci.fits,{measurement} -WEIGHT_IMAGE {weight} -CATALOG_NAME {catalog}')
+    print(f'sex gds-grizli-v5.1-f444w-clear_drc_sci.fits,{measurement} -WEIGHT_IMAGE gds-grizli-v5.1-f444w-clear_drc_wht.fits,{weight} -CATALOG_NAME {catalog}')
 

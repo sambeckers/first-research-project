@@ -8,7 +8,7 @@ Reprojects all the images (science and weight) in the FRESCO catalogue to the de
 using adaptive reprojection with flux conservation.
 """
 import os
-os.chdir("/Users/sam/Library/Mobile Documents/com~apple~CloudDocs/Astronomy Data Science MSc 2324 Yr 1/FRP/FRESCO")
+os.chdir("/Users/sam/FRESCO")
 
 from astropy.io import fits
 from reproject import reproject_adaptive

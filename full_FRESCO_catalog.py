@@ -10,17 +10,17 @@ that they are below the observation threshold of eazy). The output catalog is co
 """
 import os
 import numpy as np
-os.chdir('/Users/sam/Library/Mobile Documents/com~apple~CloudDocs/Astronomy Data Science MSc 2324 Yr 1/FRP/FRESCO')
+os.chdir('/Users/sam/FRESCO')
 
 # Read in the catalog names
 cat_names = []
-with open('catalog-names.txt', 'r') as catalog_file:
+with open('catalog-names_incl_f444w.txt', 'r') as catalog_file:
     catalog_names = catalog_file.read().splitlines()
     for cat_name in catalog_names:
         cat_names.append(cat_name)
 
 # Read in the catalogs
-os.chdir("/Users/sam/Library/Mobile Documents/com~apple~CloudDocs/Astronomy Data Science MSc 2324 Yr 1/FRP/FRESCO/Catalogs")
+os.chdir("/Users/sam/FRESCO/Catalogs")
 columns = [[[] for _ in range(len(cat_names))] for _ in range(20)] # 20 empty lists for each parameter, empty lists within for each filter
 for idx, cat_name in enumerate(cat_names):
     with open(cat_name, 'r') as catalog:
@@ -41,19 +41,6 @@ ID = columns[0][max_sources_idx]
 print(number_arr)
 
 del columns[0] # Remove the ID column
-
-# Add -100 to the fluxes that are missing
-for flux in columns[1]:
-    while len(flux) < len(ID):
-        flux.append('-100') # -100 < N_OBS_THRESHOLD in eazy (-90)
-
-# Add 0 to sources that don't have data in a filter (expect for the flux, see line 43)
-for i in range(len(columns)):
-    if i != 1:
-        for idx, param in enumerate(columns[i]):
-            while len(param) < len(ID):
-                param.append('0')
-            print(len(param))
 
 # Write the catalogs to a new file
 filters = [cat_name.split('_')[0][3:] for cat_name in cat_names] # Get the filter names from the catalog names
