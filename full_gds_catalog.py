@@ -54,7 +54,7 @@ for param in parameters_to_save:
     for filter_name in filters:
         header.append(f'{param}_{filter_name}') # Add the parameter and filter to the header
 
-with open('FRESCO_catalog.cat', 'w') as catalog_file:
+with open('gds_catalog.cat', 'w') as catalog_file:
     catalog_file.write(' '.join(header) + '\n')
     for source_idx in range(len(ID)): # Loop over the sources
         output_row = [ID[source_idx]]  # Start each row with the source ID
