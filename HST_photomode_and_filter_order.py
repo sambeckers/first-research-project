@@ -1,5 +1,5 @@
 """
-HST_photmode
+HST_photomode_and_filter_order
 Created on 18-02-2024
 
 @author(s): Sam Beckers
@@ -7,6 +7,7 @@ Created on 18-02-2024
 - This script reads the PHOTMODE keyword from the header of a FITS file and prints the value.
 Used to verify which filters were assigned to which camera
 - It also defines filter transmission curves for EAZY
+- Checks the number and order of filters in the FILTER.RES.latest file
 """
 import os
 from astropy.io import fits
@@ -57,3 +58,9 @@ def define_eazy_filter(filter_path):
 f850lpu = define_eazy_filter('/Users/sam/FRESCO/Filter throughputs/HST_WFC3_UVIS1.F850LP.dat')
 # print(f850lpu)
 
+from eazy import filters
+res = filters.FilterFile('/Users/sam/eazy-photoz/filters/FILTER.RES.latest')
+print('\n Number of filters:',res.NFILT)
+
+for i in range(res.NFILT):
+    print(f'{i+1} {res.filters[i].name}')

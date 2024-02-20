@@ -56,3 +56,4 @@ df = pd.DataFrame({
 # Save DataFrame to a new .cat file
 df.to_csv('gds_zphot_catalog.cat', sep=' ', index=False)
 print('Catalog saved')
+zout.close()
