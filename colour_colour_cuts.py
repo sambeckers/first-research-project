@@ -4,6 +4,9 @@ Created on 18-02-2024
 
 @author(s): Sam Beckers
 
+Make colour-colour cuts and plot them for a given SED, colors and redshift range.
+User is prompted to enter the colours they want to plot, from which the filter transmission curves are defined.
+The SED is redshifted and integrated through the filters to compute the magnitudes.
 """
 from eazy import filters, templates
 import matplotlib.pyplot as plt
@@ -16,18 +19,35 @@ plt.rcParams.update({
 })
 import numpy as np
 import os
-os.chdir('/Users/sam/FRESCO')
+os.chdir('/Users/sam/FRESCO/Filter throughputs')
 
 # Define the filters
-filter_dict = {'F182M': 'Filter throughputs/JWST_NIRCam.F182M.dat',
-           'F210M': 'Filter throughputs/JWST_NIRCam.F210M.dat',
-           'F430M': 'Filter throughputs/JWST_NIRCam.F430M.dat',
-           'F444W': 'Filter throughputs/JWST_NIRCam.F444W.dat',}
+filter_dict = {'F336WU': 'HST_WFC3_UVIS1.F336W.dat',
+                'F435W': 'HST_ACS_WFC.F435W.dat',
+                'F475W': 'HST_ACS_WFC.F475W.dat',
+                'F606W': 'HST_ACS_WFC.F606W.dat',
+                'F606WU': 'HST_WFC3_UVIS1.F606W.dat',
+                'F775W': 'HST_ACS_WFC.F775W.dat',
+                'F814W': 'HST_ACS_WFC.F814W.dat',
+                'F814WU': 'HST_WFC3_UVIS1.F814W.dat',
+                'F850LP': 'HST_WFC3_UVIS1.F850LP.dat',
+                'F850LPU': 'HST_WFC3_UVIS1.F850LP.dat',
+                'F105W': 'HST_WFC3_IR.F105W.dat',
+                'F110W': 'HST_WFC3_IR.F110W.dat',
+                'F125W': 'HST_WFC3_IR.F125W.dat',
+                'F140W': 'HST_WFC3_IR.F140W.dat',
+                'F160W': 'HST_WFC3_IR.F160W.dat',
+                'F182M': 'JWST_NIRCam.F182M.dat',
+                'F210M': 'JWST_NIRCam.F210M.dat',
+                'F430M': 'JWST_NIRCam.F430M.dat',
+                'F460M': 'JWST_NIRCam.F460M.dat',
+                'F480M': 'JWST_NIRCam.F480M.dat',
+                'F444W': 'JWST_NIRCam.F444W.dat',}
 
 def define_eazy_filter(filter_path):
     """Define the filter transmission curve, compatible with eazy
     Args:
-        filter_path (str): Path to the filter transmission curve (e.g. 'Filter throughputs/JWST_NIRCam.F182M.dat')
+        filter_path (str): Path to the filter transmission curve (e.g. 'JWST_NIRCam.F182M.dat')
 
     Returns:
         eazy.filters.FilterDefinition: The filter definition
@@ -54,14 +74,13 @@ def compute_mags(SED, filter, z):
     Returns:
         list: List of magnitudes
     """
-
     mag_list = []
     for z in z_arr:
         filter_throughput_z = filters.FilterDefinition(wave=filter.wave*(1+z), throughput=filter.throughput)
         # print(filter_throughput_z.wave)
         templ = templates.Template(file=SED)
         # print(templ.flux)
-        f_lambda = templ.integrate_filter(filter_throughput_z, flam=True) #don't put z=z here!
+        f_lambda = templ.integrate_filter(filter_throughput_z, flam=True) # don't put z=z here!
         mag = -2.5*np.log10(f_lambda)
         mag_list.append(mag)
     return mag_list
@@ -97,13 +116,12 @@ def make_colour_plot(template, z):
     print(x_list)
     plt.plot(x_list, y_list, c='k', ls='dotted')
     # plt.scatter(m_list[0]-m_list[1], m_list[2]-m_list[3])
-    plt.gca().xaxis.set_minor_locator(AutoMinorLocator())
+    plt.gca().xaxis.set_minor_locator(AutoMinorLocator()) # set minor ticks
     plt.gca().yaxis.set_minor_locator(AutoMinorLocator())
     plt.tick_params(which='both', right='true', top='true', direction='in', labelsize=12, width=0.7)
     plt.tick_params(which='major', length=6)
     plt.tick_params(which='minor', length=3)     
-
-    plt.axis('square')
+    plt.axis('square') # force the plot to be square
     plt.xlabel(f_name_list[0]+r'$-$'+f_name_list[1], fontsize=14)
     plt.ylabel(f_name_list[2]+r'$-$'+f_name_list[3], fontsize=14)
     plt.savefig('/Users/sam/Documents/GitHub/FRP/Figures/colour_colour_plot.pdf', bbox_inches = 'tight')
