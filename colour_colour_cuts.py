@@ -127,5 +127,5 @@ def make_colour_plot(template, z):
     plt.savefig('/Users/sam/Documents/GitHub/FRP/Figures/colour_colour_plot.pdf', bbox_inches = 'tight')
     plt.show()
 
-z_arr = np.arange(6, 20, 0.1)
+z_arr = np.arange(6, 15, 0.1)
 make_colour_plot('/Users/sam/eazy-photoz/templates/spline_templates_v3/spline_age0.31_av1.0.fits', z_arr)

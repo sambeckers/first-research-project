@@ -62,8 +62,8 @@ def plot_SED_and_filters(sed, filter_dict, z):
     # sed = templates.Template(sed_path)
 
     fig, ax = plt.subplots(dpi=450, figsize=(8,4))
-    ax.semilogy(sed.wave*(1+z), sed.flux_flam(), label=f'SED, z={z}', lw=3, c='k')
-    ax.set_xlabel(r'$\lambda$ [Angstrom]', fontsize=14)
+    ax.semilogy(sed.wave*(1+z), sed.flux_flam(), label=f'SED, z={z}', lw=1, c='k')
+    ax.set_xlabel(r'$\lambda [\rm{\r{A}}]$', fontsize=14)
     ax.set_ylabel(r'$\lambda F_{\lambda}$ [erg s$^{-1}$ cm$^{-2}$]', fontsize=14)
     ax.legend(loc='upper right', fontsize=14)
 
@@ -78,9 +78,22 @@ def plot_SED_and_filters(sed, filter_dict, z):
         f = define_eazy_filter(filter_path)
         f_min_arr.append(f.wave.min())
         f_max_arr.append(f.wave.max())
-        ax2.plot(f.wave, f.throughput, label=filter_name, lw=2, c=colors[i])
+        ax2.plot(f.wave, f.throughput, label=filter_name, lw=2,c=colors[i])
+        ax2.fill_between(f.wave, f.throughput, alpha=0.2, color=colors[i])
         ax2.set_ylabel('Filter Throughput [arbitrary units]', fontsize=14)
         ax2.set_ylim(0,1)
+
+    ly_alpha_break = 912*(1+z)
+    ly_alpha = 1216*(1+z)
+    # flux_flam_at_break = sed.flux_flam()[np.where(sed.wave*(1+z) >= ly_alpha_break)[0][0]]
+    
+    plt.annotate("",
+            xy=(ly_alpha_break,max(sed.flux_flam())), xycoords='data',
+            xytext=(ly_alpha_break, max(sed.flux_flam())+0.15), textcoords='data',
+            arrowprops=dict(arrowstyle="-|>",
+                            connectionstyle="arc3", color='k', lw=1),
+            )
+    plt.text(ly_alpha_break+1000, max(sed.flux_flam())+0.1, r'Ly$\alpha$ break at'+f' {ly_alpha_break}'+r'$\rm{\r{A}}$ (912$\rm{\r{A}}$ rest-frame)', fontsize=11, ha='left')
 
     plt.xlim(10**3,right=max(f_max_arr))
     fig.tight_layout()
@@ -120,4 +133,4 @@ filter_dict = {'F336WU': 'HST_WFC3_UVIS1.F336W.dat',
 # for SED in template_list:
 #     plot_SED_and_filters(SED, filter_dict, 15)
 
-plot_SED_and_filters(template_list[0], filter_dict, 15)
+plot_SED_and_filters(template_list[0], filter_dict, 7)
