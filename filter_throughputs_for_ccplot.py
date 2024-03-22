@@ -58,47 +58,53 @@ def plot_SED_and_filters(sed, filter_dict, z):
         sed_path (str): Path to the SED file
         filter_dict (dict): Dictionary containing filter names and their corresponding transmission curve paths
     """
-
-    # sed = templates.Template(sed_path)
-
     fig, ax = plt.subplots(dpi=450, figsize=(8,4))
-    ax.semilogy(sed.wave*(1+z), sed.flux_flam(), label=f'SED, z={z}', lw=1, c='k')
+    ax.semilogy(sed.wave*(1+z), sed.flux_flam(), label=f'SED, z={z}', lw=1, c='k') # semi-log plot
     ax.set_xlabel(r'$\lambda [\rm{\r{A}}]$', fontsize=14)
     ax.set_ylabel(r'$\lambda F_{\lambda}$ [erg s$^{-1}$ cm$^{-2}$]', fontsize=14)
     ax.legend(loc='upper right', fontsize=14)
 
-    ax2 = ax.twinx()
-    f_min_arr = []
+    ax2 = ax.twinx() # create a second y-axis
     f_max_arr = []
-
     cmap = plt.get_cmap('rainbow')
-    colors = cmap(np.linspace(0,1,len(filter_dict))) 
+    colors = cmap(np.linspace(0,1,len(filter_dict))) # get a list of colors for the filters
     
     for (i, (filter_name, filter_path)) in enumerate(filter_dict.items()):
         f = define_eazy_filter(filter_path)
-        f_min_arr.append(f.wave.min())
         f_max_arr.append(f.wave.max())
         ax2.plot(f.wave, f.throughput, label=filter_name, lw=2,c=colors[i])
         ax2.fill_between(f.wave, f.throughput, alpha=0.2, color=colors[i])
         ax2.set_ylabel('Filter Throughput [arbitrary units]', fontsize=14)
         ax2.set_ylim(0,1)
 
-    ly_alpha_break = 912*(1+z)
+    # Lyman break arrow and text annotation
+    ly_break = 912*(1+z)
     ly_alpha = 1216*(1+z)
-    # flux_flam_at_break = sed.flux_flam()[np.where(sed.wave*(1+z) >= ly_alpha_break)[0][0]]
-    
-    plt.annotate("",
-            xy=(ly_alpha_break,max(sed.flux_flam())), xycoords='data',
-            xytext=(ly_alpha_break, max(sed.flux_flam())+0.15), textcoords='data',
-            arrowprops=dict(arrowstyle="-|>",
-                            connectionstyle="arc3", color='k', lw=1),
-            )
-    plt.text(ly_alpha_break+1000, max(sed.flux_flam())+0.1, r'Ly$\alpha$ break at'+f' {ly_alpha_break}'+r'$\rm{\r{A}}$ (912$\rm{\r{A}}$ rest-frame)', fontsize=11, ha='left')
 
-    plt.xlim(10**3,right=max(f_max_arr))
+    h_ly = 0.95 # ~hightest F_lambda value of SEDs for arrow
+    plt.annotate("",
+        xy=(ly_break, h_ly+0.14), xycoords='data',
+        xytext=(ly_alpha, h_ly+0.14),
+        arrowprops=dict(arrowstyle="-", connectionstyle="arc3",shrinkA=0, shrinkB=0, color='k', lw=1, linestyle='-'),
+        annotation_clip=False) # shrinkA and ShrinkB set to 0 to make line full length
+    plt.annotate("",
+        xy=(ly_break,h_ly), xycoords='data',
+        xytext=(ly_break, h_ly+0.15),
+        arrowprops=dict(arrowstyle="-|>", connectionstyle="arc3", color='k', lw=1),
+        annotation_clip=False)
+    plt.annotate("",
+        xy=(ly_alpha,h_ly), xycoords='data',
+        xytext=(ly_alpha, h_ly+0.15),
+        arrowprops=dict(arrowstyle="-|>",connectionstyle="arc3", color='k', lw=1),
+        annotation_clip=False)
+    plt.text(ly_alpha+1000, h_ly+0.1, r'Lyman break '+f' {ly_break}-{ly_alpha}'+r'$\rm{\r{A}}$ (912-1216$\rm{\r{A}}$ rest-frame)', fontsize=11, ha='left')
+
+    plt.xlim(10**3,right=max(f_max_arr)) # set x-axis limits
     fig.tight_layout()
     plt.legend(bbox_to_anchor=(1.1, 0.5), loc='center left', fontsize=14, ncol=2)
+    plt.savefig(f'/Users/sam/Documents/GitHub/FRP/Figures/{sed.name}_SED_filters_{z}.pdf', bbox_inches = 'tight')
     plt.show()
+
 
 os.chdir('/Users/sam/eazy-photoz')
 template_list = templates.read_templates_file('templates/spline_templates_v3/c2020_spline.param')
@@ -131,6 +137,6 @@ filter_dict = {'F336WU': 'HST_WFC3_UVIS1.F336W.dat',
                 'F444W': 'JWST_NIRCam.F444W.dat',}
 
 # for SED in template_list:
-#     plot_SED_and_filters(SED, filter_dict, 15)
+#     plot_SED_and_filters(SED, filter_dict, 7)
 
-plot_SED_and_filters(template_list[0], filter_dict, 7)
+plot_SED_and_filters(template_list[2], filter_dict, 7)
