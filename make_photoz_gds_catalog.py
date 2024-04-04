@@ -24,7 +24,7 @@ with open('catalog-names_incl_f444w.txt', 'r') as catalog_file:
 filters = [cat_name.split('_')[0][3:] for cat_name in cat_names]
 
 # Read in the catalog including headers
-cat = np.genfromtxt('catalogs/gds_catalog.cat', delimiter=' ', names=True, comments='#')
+cat = np.genfromtxt('catalogs_v2/gds_catalog_filtered.cat', delimiter=' ', names=True, comments='#')
 print(cat.dtype.names)
 
 # Read in the eazy zout catalog FITS

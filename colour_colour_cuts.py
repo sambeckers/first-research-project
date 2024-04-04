@@ -81,9 +81,10 @@ def compute_mags(SED, filter, z):
         templ = templates.Template(file=SED)
         # print(templ.flux)
         f_lambda = templ.integrate_filter(filter_throughput_z, flam=True) # don't put z=z here!
-        mag = -2.5*np.log10(f_lambda)
+        mag = 2.5*np.log10(f_lambda)
         mag_list.append(mag)
     return mag_list
+
 
 def make_colour_plot(template, z):
     """Make a colour-colour plot of an SED at different redshifts
@@ -94,7 +95,8 @@ def make_colour_plot(template, z):
     """
     # Define the filters
     print('The available filters are:\n', list(filter_dict.keys()))
-    cc_input = input('Enter the colours you want to plot (e.g. "F210M - F444W vs F182M - F210M"):')
+    # cc_input = input('Enter the colours you want to plot (e.g. "F210M - F444W vs F182M - F210M"):')
+    cc_input = 'F182M - F444W vs F606W - F182M'
 
     f_name_list = []
     m_list = [[] for _ in range(4)]
@@ -113,9 +115,21 @@ def make_colour_plot(template, z):
     plt.figure(dpi=450)
     x_list = [m_list[0][i]-m_list[1][i] for i in range(len(m_list[0]))]
     y_list = [m_list[2][i]-m_list[3][i] for i in range(len(m_list[0]))]
-    print(x_list)
-    plt.plot(x_list, y_list, c='k', ls='dotted')
-    # plt.scatter(m_list[0]-m_list[1], m_list[2]-m_list[3])
+    plt.plot(x_list, y_list, c='k', ls='dotted', lw=1, alpha=0.8)
+
+    z_show = z[::5] # only show every 5th redshift
+    z_show_idx = [np.argmin(np.abs(z - z_s)) for z_s in z_show]
+    y_list_z = [y_list[i] for i in z_show_idx]
+    plt.plot(np.zeros(len(y_list_z)), y_list_z, '-bo', ms=2, lw=1)
+
+    z_annotate = [6.0, 9.0, 12.0]
+    z_annotate_idx = [np.argmin(np.abs(z - z_s)) for z_s in z_annotate]
+    print(z_annotate_idx)
+    y_list_z = [y_list[i] for i in z_annotate_idx]
+    for i, txt in enumerate(z_annotate):
+        plt.annotate(str(txt), (0.02, y_list_z[i]), textcoords="data", ha='left', fontsize=8, color='b', 
+                     bbox=dict(facecolor='white', edgecolor='none', pad=0.25), fontweight='bold')
+
     plt.gca().xaxis.set_minor_locator(AutoMinorLocator()) # set minor ticks
     plt.gca().yaxis.set_minor_locator(AutoMinorLocator())
     plt.tick_params(which='both', right='true', top='true', direction='in', labelsize=12, width=0.7)
@@ -128,4 +142,4 @@ def make_colour_plot(template, z):
     plt.show()
 
 z_arr = np.arange(6, 15, 0.1)
-make_colour_plot('/Users/sam/eazy-photoz/templates/spline_templates_v3/spline_age0.31_av1.0.fits', z_arr)
+make_colour_plot('/Users/sam/eazy-photoz/templates/sfhz/corr_sfhz_13_bin1_av0.50.fits', z_arr)

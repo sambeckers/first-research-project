@@ -4,7 +4,7 @@ Created on 20-01-2024
 
 @author(s): Sam Beckers
 
-Reaads in the catalogs from all filters, and combines them into one catalog. The catalog has an ID number for each source, 
+Reads in the catalogs from all filters, and combines them into one catalog. The catalog has an ID number for each source, 
 and has each SE parameter for each filter. If a source doesn't have a value for a parameter in a filter, it is set to 0 (expection: fluxes are set to -100 such
 that they are below the observation threshold of eazy). The output catalog is compliant with eazy input requirements.
 """
@@ -20,7 +20,7 @@ with open('catalog-names_incl_f444w.txt', 'r') as catalog_file:
         cat_names.append(cat_name)
 
 # Read in the catalogs
-os.chdir("/Users/sam/FRESCO/Catalogs")
+os.chdir("/Users/sam/FRESCO/Catalogs_v2")
 columns = [[[] for _ in range(len(cat_names))] for _ in range(20)] # 20 empty lists for each parameter, empty lists within for each filter
 for idx, cat_name in enumerate(cat_names):
     with open(cat_name, 'r') as catalog:

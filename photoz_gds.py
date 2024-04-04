@@ -23,12 +23,12 @@ f_path = '/Users/sam/Fresco/' # Path to the FRESCO directory
 
 # Define the parameters for the EAZY fitting
 params = {}
-params['CATALOG_FILE'] = f_path + 'Catalogs/gds_catalog.cat'
+params['CATALOG_FILE'] = f_path + 'Catalogs_v2/gds_catalog_filtered.cat'
 params['CATALOG_FORMAT'] = 'ascii' # important to specify the format
 params['OUTPUT_DIRECTORY'] = f_path + 'eazy outputs'
 params['MAIN_OUTPUT_FILE'] = f_path + 'eazy outputs/gds_photoz.eazypy'
 
-params['Z_MAX'] = 20 # Maximum redshift
+params['Z_MAX'] = 15 # Maximum redshift
 params['Z_STEP'] = 0.005 # Redshift step
 params['PRIOR_ABZP'] = 23.9 # AB zeropoint
 params['PRIOR_FILTER'] = 375
@@ -42,7 +42,7 @@ params['OMEGA_L'] = 0.6847
 
 params['WAVELENGTH_FILE'] = 'templates/uvista_nmf/lambda.def'
 params['PRIOR_FILE'] = 'templates/prior_F160W_TAO.dat'
-params['TEMPLATES_FILE'] = 'templates/spline_templates_v3/c2020_spline.param'
+params['TEMPLATES_FILE'] = 'templates/sfhz/corr_sfhz_13.param'
 params['TEMP_ERR_FILE'] = 'templates/template_error_cosmos2020.txt'
 params['TEMP_ERR_A2'] = 1. # Template error amplitude
 params['SYS_ERR'] = 0.05 # Systematic error
