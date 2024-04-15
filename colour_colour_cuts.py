@@ -19,7 +19,6 @@ plt.rcParams.update({
 })
 import numpy as np
 import os
-os.chdir('/Users/sam/FRESCO/Filter throughputs')
 
 # Define the filters
 filter_dict = {'F336WU': 'HST_WFC3_UVIS1.F336W.dat',
@@ -53,6 +52,7 @@ def define_eazy_filter(filter_path):
         eazy.filters.FilterDefinition: The filter definition
     """
     # Read in the filter transmission curves
+    os.chdir('/Users/sam/FRESCO/Filter throughputs')
     with open(filter_path, 'r') as filter_file:
         filter_data = filter_file.read().splitlines()
         wx = []
@@ -76,17 +76,21 @@ def compute_mags(SED, filter, z):
     """
     mag_list = []
     for z in z_arr:
-        filter_throughput_z = filters.FilterDefinition(wave=filter.wave*(1+z), throughput=filter.throughput)
-        # print(filter_throughput_z.wave)
-        templ = templates.Template(file=SED)
-        # print(templ.flux)
-        f_lambda = templ.integrate_filter(filter_throughput_z, flam=True) # don't put z=z here!
-        mag = 2.5*np.log10(f_lambda)
+        filter_throughput_z = filters.FilterDefinition(wave=filter.wave, throughput=filter.throughput)
+        f_lambda = SED.integrate_filter(filter_throughput_z, z=z, include_igm=True, redshift_type='interp')
+        mag = -2.5*np.log10(f_lambda)
         mag_list.append(mag)
     return mag_list
 
+def source_mags(filter):
+    cat_zphot = np.genfromtxt('/Users/sam/FRESCO/Catalogs_v2/gds_zphot_catalog_filtered1.cat', delimiter=' ', names=True, comments='#')
+    filter_list = [filter_name[1:].lower() for filter_name in filter_dict.keys()]
+    # print(cat_zphot[f'MAG_APER_{filter_list[20]}'])
+    index = np.flatnonzero(np.core.defchararray.find(list(filter_dict.keys()),filter)!=-1)[0]
+    flux = cat_zphot[f'f_{filter_list[index]}']
+    return -2.5*np.log10(flux)
 
-def make_colour_plot(template, z):
+def make_colour_plot(template, z, include_sources=False):
     """Make a colour-colour plot of an SED at different redshifts
 
     Args:
@@ -94,42 +98,49 @@ def make_colour_plot(template, z):
         z (np.array): Array of redshifts (e.g. np.arange(6, 20, 0.1)
     """
     # Define the filters
-    print('The available filters are:\n', list(filter_dict.keys()))
-    # cc_input = input('Enter the colours you want to plot (e.g. "F210M - F444W vs F182M - F210M"):')
-    cc_input = 'F182M - F444W vs F606W - F182M'
 
+    # Compute the magnitudes
     f_name_list = []
     m_list = [[] for _ in range(4)]
+    m_source_list = [[] for _ in range(4)]
     for idx, i in enumerate([0, 2, 4, 6]):
         f_name = cc_input.split(' ')[i]
         f_name_list.append(f_name)
         if f_name not in list(filter_dict.keys()):
             print(f'Filter {f_name} not recognised')
             return
-        
         f = define_eazy_filter(filter_dict[f_name])
         m = compute_mags(template, f, z)
         m_list[idx] = m
+        m_source = source_mags(f_name)
+        m_source_list[idx] = m_source
 
     # Plot the colours
-    plt.figure(dpi=450)
     x_list = [m_list[0][i]-m_list[1][i] for i in range(len(m_list[0]))]
     y_list = [m_list[2][i]-m_list[3][i] for i in range(len(m_list[0]))]
     plt.plot(x_list, y_list, c='k', ls='dotted', lw=1, alpha=0.8)
 
+    # Plot the source magnitudes
+    if include_sources:
+        x_list_source = [m_source_list[0][i]-m_source_list[1][i] for i in range(len(m_source_list[0]))]
+        y_list_source = [m_source_list[2][i]-m_source_list[3][i] for i in range(len(m_source_list[0]))]
+        plt.scatter(x_list_source, y_list_source, c='r', s=5)
+
+    # Plot the redshift markers
     z_show = z[::5] # only show every 5th redshift
     z_show_idx = [np.argmin(np.abs(z - z_s)) for z_s in z_show]
     y_list_z = [y_list[i] for i in z_show_idx]
-    plt.plot(np.zeros(len(y_list_z)), y_list_z, '-bo', ms=2, lw=1)
-
-    z_annotate = [6.0, 9.0, 12.0]
+    x_list_z = [x_list[i] for i in z_show_idx]
+    plt.scatter(x_list_z, y_list_z, c='blue', s=5)
+    z_annotate = [0, 3, 6.0, 9.0, 12.0, 15.0]
     z_annotate_idx = [np.argmin(np.abs(z - z_s)) for z_s in z_annotate]
-    print(z_annotate_idx)
     y_list_z = [y_list[i] for i in z_annotate_idx]
+    x_list_z = [x_list[i] for i in z_annotate_idx]
     for i, txt in enumerate(z_annotate):
-        plt.annotate(str(txt), (0.02, y_list_z[i]), textcoords="data", ha='left', fontsize=8, color='b', 
+        plt.annotate(str(txt), (x_list_z[i]+0.02, y_list_z[i]), textcoords="offset points", ha='left', fontsize=8, color='b', 
                      bbox=dict(facecolor='white', edgecolor='none', pad=0.25), fontweight='bold')
 
+    # Axes settings
     plt.gca().xaxis.set_minor_locator(AutoMinorLocator()) # set minor ticks
     plt.gca().yaxis.set_minor_locator(AutoMinorLocator())
     plt.tick_params(which='both', right='true', top='true', direction='in', labelsize=12, width=0.7)
@@ -138,8 +149,16 @@ def make_colour_plot(template, z):
     plt.axis('square') # force the plot to be square
     plt.xlabel(f_name_list[0]+r'$-$'+f_name_list[1], fontsize=14)
     plt.ylabel(f_name_list[2]+r'$-$'+f_name_list[3], fontsize=14)
-    plt.savefig('/Users/sam/Documents/GitHub/FRP/Figures/colour_colour_plot.pdf', bbox_inches = 'tight')
+    plt.savefig('/Users/sam/Documents/GitHub/FRP/Figures/colour_colour_plot_v2.pdf', bbox_inches = 'tight')
     plt.show()
 
-z_arr = np.arange(6, 15, 0.1)
-make_colour_plot('/Users/sam/eazy-photoz/templates/sfhz/corr_sfhz_13_bin1_av0.50.fits', z_arr)
+z_arr = np.arange(0, 15, 0.1)
+
+os.chdir('/Users/sam/eazy-photoz')
+template_list = templates.read_templates_file('templates/sfhz/carnall_sfhz_13.param')
+# print(template_list[0].zindex())
+# for temp in template_list:
+#     print(temp)
+#     make_colour_plot(temp, z_arr, include_sources=True)
+
+make_colour_plot(template_list[0], z_arr, include_sources=True)

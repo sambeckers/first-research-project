@@ -42,7 +42,7 @@ params['OMEGA_L'] = 0.6847
 
 params['WAVELENGTH_FILE'] = 'templates/uvista_nmf/lambda.def'
 params['PRIOR_FILE'] = 'templates/prior_F160W_TAO.dat'
-params['TEMPLATES_FILE'] = 'templates/sfhz/corr_sfhz_13.param'
+params['TEMPLATES_FILE'] = 'templates/sfhz/carnall_sfhz_13.param'
 params['TEMP_ERR_FILE'] = 'templates/template_error_cosmos2020.txt'
 params['TEMP_ERR_A2'] = 1. # Template error amplitude
 params['SYS_ERR'] = 0.05 # Systematic error

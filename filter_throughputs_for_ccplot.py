@@ -139,4 +139,4 @@ filter_dict = {'F336WU': 'HST_WFC3_UVIS1.F336W.dat',
 # for SED in template_list:
 #     plot_SED_and_filters(SED, filter_dict, 7)
 
-plot_SED_and_filters(template_list[2], filter_dict, 11)
+plot_SED_and_filters(template_list[2], filter_dict, 0)

@@ -39,18 +39,24 @@ dec = cat['DELTA_J2000_444w'][z_phot>6]
 
 flux = [[] for _ in range(len(filters))]
 flux_err = [[] for _ in range(len(filters))]
+mag_aper = [[] for _ in range(len(filters))]
 for idx, filter in enumerate(filters):
     flux[idx] = cat[f'f_{filter}'][z_phot>6]
     flux_err[idx] = cat[f'e_{filter}'][z_phot>6]
+    mag_aper[idx] = cat[f'MAG_APER_{filter}'][z_phot>6]
 
 # Create a DataFrame with the params for the selected sources
 df = pd.DataFrame({
     'ID': ID,
     'z_phot': z_phot_6,
+    'z_025': zout[1].data['z025'][z_phot>6],
+    'z_975': zout[1].data['z975'][z_phot>6],
+    'z_500': zout[1].data['z500'][z_phot>6],
     'ra': ra,
     'dec': dec,
     **{f'f_{filter}': flux[idx] for idx, filter in enumerate(filters)},
-    **{f'e_{filter}': flux_err[idx] for idx, filter in enumerate(filters)}
+    **{f'e_{filter}': flux_err[idx] for idx, filter in enumerate(filters)},
+    **{f'MAG_APER_{filter}': mag_aper[idx] for idx, filter in enumerate(filters)}
 })
 
 # Save DataFrame to a new .cat file
