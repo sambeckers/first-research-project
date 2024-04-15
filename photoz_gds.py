@@ -27,6 +27,8 @@ params['CATALOG_FILE'] = f_path + 'Catalogs_v2/gds_catalog_filtered.cat'
 params['CATALOG_FORMAT'] = 'ascii' # important to specify the format
 params['OUTPUT_DIRECTORY'] = f_path + 'eazy outputs'
 params['MAIN_OUTPUT_FILE'] = f_path + 'eazy outputs/gds_photoz.eazypy'
+params['N_MIN_COLORS'] = 3 # Minimum number of colors
+params['NOT_OBS_THRESHOLD'] = -90 # Threshold for non-detection
 
 params['Z_MAX'] = 15 # Maximum redshift
 params['Z_STEP'] = 0.005 # Redshift step
@@ -42,7 +44,7 @@ params['OMEGA_L'] = 0.6847
 
 params['WAVELENGTH_FILE'] = 'templates/uvista_nmf/lambda.def'
 params['PRIOR_FILE'] = 'templates/prior_F160W_TAO.dat'
-params['TEMPLATES_FILE'] = 'templates/sfhz/carnall_sfhz_13.param'
+params['TEMPLATES_FILE'] = 'templates/sfhz/corr_sfhz_13.param'
 params['TEMP_ERR_FILE'] = 'templates/template_error_cosmos2020.txt'
 params['TEMP_ERR_A2'] = 1. # Template error amplitude
 params['SYS_ERR'] = 0.05 # Systematic error

@@ -121,17 +121,24 @@ def plot_tracks():
     zarr = np.arange(0, 12, 0.5)
     os.chdir('/Users/sam/eazy-photoz')
     template_list = templates.read_templates_file('templates/sfhz/corr_sfhz_13.param')
-    for temp in template_list:
-        # if temp == template_list[0]:
-        AV, SFR = temp.meta['AV'], temp.meta['SFR'] # get the absorption coefficient and SFR values from the template header
+    grey_colors = [plt.cm.gray(i/len(template_list)) for i in range(len(template_list))]
+    for temp, color in zip(template_list, reversed(grey_colors)):
+        AV, SFR = temp.meta['AV'], temp.meta['SFR']
         x, y = compute_sed_color(temp, f_x, f_xy, f_y, zarr)
-        plt.plot(x, y, '--', alpha=0.5, markersize=0.5, label=f'{AV}, {SFR:.2e}')
+        plt.plot(x, y, '--', alpha=0.5, markersize=0.5, label=f'{AV}, {SFR:.2e}', c=color)
+        for idx, z in enumerate(zarr):
+            if z>=6:
+                plt.scatter(x[idx], y[idx], marker='o', c='b', s=2)
+                if z in [6, 7, 8, 10, 12]:
+                    plt.annotate(f'{z}', (x[idx]+0.01, y[idx]+0.01), color='b', fontsize=8)
+        
+                
 
 def plot_source_color():
     """
     Plot the colors of sources in the catalog
     """
-    cat_zphot = np.genfromtxt('/Users/sam/FRESCO/Catalogs_v2/gds_zphot_catalog_filtered_carnall.cat', delimiter=' ', names=True, comments='#')
+    cat_zphot = np.genfromtxt('/Users/sam/FRESCO/Catalogs_v2/gds_zphot_catalog_filtered_corr.cat', delimiter=' ', names=True, comments='#')
     F_x_F_xy_F_y = []
     for f_name in [f_names[1], f_names[0], f_names[2]]:
         filter_list = [filter_name[1:].lower() for filter_name in filter_dict.keys()]
@@ -139,7 +146,7 @@ def plot_source_color():
         F_x_F_xy_F_y.append(cat_zphot[f'f_{filter_list[index]}'])
     x = -2.5*np.log10(F_x_F_xy_F_y[1]/F_x_F_xy_F_y[0])
     y = -2.5*np.log10(F_x_F_xy_F_y[2]/F_x_F_xy_F_y[1])
-    plt.scatter(x, y, c='r')
+    plt.scatter(x, y, marker='*', c='k', s=10, label='Sources')
 
 def colour_colour_plot():
     """
@@ -148,8 +155,8 @@ def colour_colour_plot():
     plt.figure(dpi=450)
     plot_tracks()
     plot_source_color()
-    plt.xlim(-.5,2)
-    plt.ylim(-1,12)
+    plt.xlim(-1,1.5)
+    plt.ylim(-2,10)
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', title=r'$\alpha_{\nu} [\rm{cm}^{-1}]$, SFR [M$_\odot$ yr$^{{-1}}$]', title_fontsize=12, fontsize=12)
     # Axes settings
     plt.gca().xaxis.set_minor_locator(AutoMinorLocator()) # set minor ticks

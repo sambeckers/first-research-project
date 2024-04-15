@@ -17,13 +17,17 @@ plt.rcParams.update({
 })
 os.chdir("/Users/sam/FRESCO/")
 
-def full_gds_catalog():
-    # Read in the catalog names
+def get_cat_name_filter_numbers():
     cat_names = []
     with open('catalog-names_incl_f444w.txt', 'r') as catalog_file:
         catalog_names = catalog_file.read().splitlines()
         for cat_name in catalog_names:
             cat_names.append(cat_name)
+    return cat_names, [cat_name.split('_')[0][3:] for cat_name in cat_names] # Get the filter names from the catalog names
+
+def full_gds_catalog():
+    # Read in the catalog names
+    cat_names, filters = get_cat_name_filter_numbers()
 
     # Read in the catalogs
     os.chdir("/Users/sam/FRESCO/Catalogs_v2")
@@ -48,7 +52,6 @@ def full_gds_catalog():
     del columns[0] # Remove the ID column
 
     # Write the catalogs to a new file
-    filters = [cat_name.split('_')[0][3:] for cat_name in cat_names] # Get the filter names from the catalog names
     parameters_to_save = [
         'f', 'e', 'MAG_APER', 'MAGERR_APER', 'XPEAK_IMAGE', 'YPEAK_IMAGE',
         'XPEAK_WORLD', 'YPEAK_WORLD', 'ALPHAPEAK_J2000', 'DELTAPEAK_J2000', 'X_IMAGE', 'Y_IMAGE',
@@ -67,6 +70,8 @@ def full_gds_catalog():
                 for filter_name in filters:
                     # Get the corresponding value for the current source, parameter, and filter
                     value = columns[param_idx][filters.index(filter_name)][source_idx]
+                    if param == 'f' or param == 'e':
+                        value = str(float(value) * 10**-2) # Convert flux/error from 10*nJy to µJy
                     output_row.append(value)
 
             # Append the row to the output file
@@ -74,29 +79,31 @@ def full_gds_catalog():
     print('Full catalog saved\n')
     os.chdir("/Users/sam/FRESCO/")
 
-def class_star_flags_selection():
+def class_star_flags_nondetect_selection():
     try: 
         cat = np.genfromtxt('Catalogs_v2/gds_catalog.cat', delimiter=' ', names=True, comments='#')
 
-        sel = (cat['CLASS_STAR_444w'] < 0.9) & (cat['FLAGS_444w'] == 0) & (cat['f_444w']/cat['e_444w'] > 5)
+        sel = (cat['CLASS_STAR_444w'] <= 0.9) & (cat['FLAGS_444w'] == 0) & (cat['f_444w']/cat['e_444w'] >= 5)
         cat_filter = cat[sel]
 
+        _, filters = get_cat_name_filter_numbers()
+        for filter in filters:
+            for idx, (f, e) in enumerate(zip(cat_filter[f'f_{filter}'], cat_filter[f'e_{filter}'])):
+                if f == 0.0 and e == 0.0:
+                    # print(f'Filter {filter} has zero flux and error at index {idx}')
+                    cat_filter[f'f_{filter}'][idx] = -100.0
+                
         # Write the filtered catalog to a new file
         header = ' '.join(cat.dtype.names)
         np.savetxt('Catalogs_v2/gds_catalog_filtered.cat', cat_filter, header=header, comments='#', fmt='%s')
-        print(f'Filtered catalog (class_star, flags, SNR) saved.\nOriginal catalog: {len(cat)} sources \nFiltered catalog: {len(cat_filter)} sources, {len(cat) - len(cat_filter)} sources removed\n')
+        print(f'Filtered catalog (class_star, flags, SNR, non-detections) saved.\nOriginal catalog: {len(cat)} sources \nFiltered catalog: {len(cat_filter)} sources, {len(cat) - len(cat_filter)} sources removed\n')
     except FileNotFoundError:
         print('gds_catalog.cat not found. Run full_gds_catalog() first.')
 
 def photoz_gds_catalog():
     # Read in filter names
     try: 
-        cat_names = []
-        with open('catalog-names_incl_f444w.txt', 'r') as catalog_file:
-            catalog_names = catalog_file.read().splitlines()
-            for cat_name in catalog_names:
-                cat_names.append(cat_name)
-        filters = [cat_name.split('_')[0][3:] for cat_name in cat_names]
+        _, filters = get_cat_name_filter_numbers()
 
         # Read in the catalog including headers
         cat = np.genfromtxt('catalogs_v2/gds_catalog_filtered.cat', delimiter=' ', names=True, comments='#')
@@ -134,41 +141,42 @@ def photoz_gds_catalog():
         })
 
         # Save DataFrame to a new .cat file
-        df.to_csv('Catalogs_v2/gds_zphot_catalog_carnall.cat', sep=' ', index=False)
+        df.to_csv('Catalogs_v2/gds_zphot_catalog_corr.cat', sep=' ', index=False)
         print('Photometric redshift catalog saved\n')
         zout.close()
     except FileNotFoundError:
         print('gds_catalog_filtered.cat not found. Run class_star_flags_selection() first.')
 
-def z_bin_selection():
+def z_bin_selection(strictness):
     try: 
-        cat_zphot = np.genfromtxt('Catalogs_v2/gds_zphot_catalog_carnall.cat', delimiter=' ', names=True, comments='#')
+        cat_zphot = np.genfromtxt('Catalogs_v2/gds_zphot_catalog_corr.cat', delimiter=' ', names=True, comments='#')
         #(z97 - z02)/(1+z50)/2
-        sel2 = (cat_zphot['z_975'] - cat_zphot['z_025'])/(1 + cat_zphot['z_500'])/2 < 0.01
+        sel2 = (cat_zphot['z_975'] - cat_zphot['z_025'])/(1 + cat_zphot['z_500'])/2 < strictness
         cat_zphot_filter = cat_zphot[sel2]
         header = ' '.join(cat_zphot.dtype.names)
-        np.savetxt('Catalogs_v2/gds_zphot_catalog_filtered_carnall.cat', cat_zphot_filter, header=header, comments='#', fmt='%s')
+        np.savetxt('Catalogs_v2/gds_zphot_catalog_filtered_corr.cat', cat_zphot_filter, header=header, comments='#', fmt='%s')
         print(f'Filtered z_phot catalog saved.\nOriginal catalog: {len(cat_zphot)} sources \nFiltered catalog: {len(cat_zphot_filter)} sources, {len(cat_zphot) - len(cat_zphot_filter)} sources removed\n')
     except FileNotFoundError:
         print('gds_zphot_catalog.cat not found. Run photoz_gds_catalog() first.')
 
 def z_phot_hist():
     try:
-        cat = np.genfromtxt('Catalogs_v2/gds_zphot_catalog_filtered_carnall.cat', delimiter=' ', names=True, comments='#')
+        cat = np.genfromtxt('Catalogs_v2/gds_zphot_catalog_filtered_corr.cat', delimiter=' ', names=True, comments='#')
         z_phot = cat['z_phot']
         plt.figure(dpi=450)
         plt.hist(z_phot, bins=30, color='k')
         plt.xlabel(r'$\rm{z_{phot}}$', fontsize=14)
         plt.ylabel('Count', fontsize=14)
+        plt.savefig('z_phot_hist.pdf', bbox_inches='tight')
         plt.show()
     except FileNotFoundError:
         print('gds_zphot_catalog_filtered_carnall.cat not found. Run z_bin_selection() first.')
 
 def main():
     full_gds_catalog()
-    class_star_flags_selection()
+    class_star_flags_nondetect_selection()
     photoz_gds_catalog()
-    z_bin_selection()
+    z_bin_selection(0.01)
     z_phot_hist()
 
 main()
