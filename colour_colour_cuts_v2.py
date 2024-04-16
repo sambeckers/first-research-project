@@ -78,7 +78,7 @@ def get_filters():
     """
     print('The available filters are:\n', list(filter_dict.keys()))
     # cc_input = input('Enter the colours you want to plot (e.g. "F210M - F444W vs F182M - F210M"):')
-    cc_input = 'F182M - F210M vs F814W - F182M'
+    cc_input = 'F182M - F210M vs F606W - F110W'
 
     f_name_list = []
     for idx, i in enumerate([0, 2, 4, 6]):
@@ -118,7 +118,7 @@ def plot_tracks():
     """
     Plot the SED colors at different redshifts for a set of templates
     """
-    zarr = np.arange(0, 12, 0.5)
+    zarr = np.arange(0, 12, 0.2)
     os.chdir('/Users/sam/eazy-photoz')
     template_list = templates.read_templates_file('templates/sfhz/corr_sfhz_13.param')
     grey_colors = [plt.cm.gray(i/len(template_list)) for i in range(len(template_list))]
@@ -157,7 +157,7 @@ def colour_colour_plot():
     plot_source_color()
     plt.xlim(-1,1.5)
     plt.ylim(-2,10)
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', title=r'$\alpha_{\nu} [\rm{cm}^{-1}]$, SFR [M$_\odot$ yr$^{{-1}}$]', title_fontsize=12, fontsize=12)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', title=r'$A_V$, sSFR [yr$^{{-1}}$]', title_fontsize=12, fontsize=12)
     # Axes settings
     plt.gca().xaxis.set_minor_locator(AutoMinorLocator()) # set minor ticks
     plt.gca().yaxis.set_minor_locator(AutoMinorLocator())
