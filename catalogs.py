@@ -170,13 +170,13 @@ def z_phot_hist():
         plt.savefig('z_phot_hist.pdf', bbox_inches='tight')
         plt.show()
     except FileNotFoundError:
-        print('gds_zphot_catalog_filtered_carnall.cat not found. Run z_bin_selection() first.')
+        print('gds_zphot_catalog_filtered_corr.cat not found. Run z_bin_selection() first.')
 
 def main():
     full_gds_catalog()
     class_star_flags_nondetect_selection()
     photoz_gds_catalog()
-    z_bin_selection(0.01)
+    z_bin_selection(0.001)
     z_phot_hist()
 
 main()
