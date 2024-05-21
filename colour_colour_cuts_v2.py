@@ -10,6 +10,7 @@ The SED is redshifted and integrated through the filters to compute the magnitud
 """
 from eazy import filters, templates
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from matplotlib.ticker import AutoMinorLocator
 # Set plt font to LaTeX
 plt.rcParams.update({
@@ -19,6 +20,9 @@ plt.rcParams.update({
 })
 import numpy as np
 import os
+f_path = '/Users/sam/FRESCO/' # Path to the FRESCO directory
+eazy_path = '/Users/sam/eazy-photoz/'
+fig_path = '/Users/sam/Documents/GitHub/FRP/Figures/'
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -54,7 +58,7 @@ def define_eazy_filter(filter_path):
         eazy.filters.FilterDefinition: The filter definition
     """
     # Read in the filter transmission curves
-    os.chdir('/Users/sam/FRESCO/Filter throughputs')
+    os.chdir(f_path+'Filter throughputs')
     with open(filter_path, 'r') as filter_file:
         filter_data = filter_file.read().splitlines()
         wx = []
@@ -66,7 +70,7 @@ def define_eazy_filter(filter_path):
     f = filters.FilterDefinition(wave=np.array(wx), throughput=np.array(wy))
     return f
 
-def get_filters():
+def get_filters(filters=None):
     """Prompt the user to enter the filters they want to plot 
     and return the filter transmission curves
 
@@ -76,9 +80,13 @@ def get_filters():
         eazy.filters.FilterDefinition: The filter transmission curve for the y-axis
         list: The names of the filters
     """
-    print('The available filters are:\n', list(filter_dict.keys()))
+    # print('The available filters are:\n', list(filter_dict.keys()))
     # cc_input = input('Enter the colours you want to plot (e.g. "F210M - F444W vs F182M - F210M"):')
-    cc_input = 'F182M - F210M vs F606W - F110W'
+    if filters == None:
+        cc_input = 'F182M - F210M vs F814W - F182M'
+    else:
+        cc_input = filters
+    
 
     f_name_list = []
     for idx, i in enumerate([0, 2, 4, 6]):
@@ -92,7 +100,8 @@ def get_filters():
     fy = define_eazy_filter(filter_dict[f_name_list[2]])
     return fx, fxy, fy, f_name_list
 
-f_x, f_xy, f_y, f_names = get_filters()
+# Define the filters
+f_x, f_xy, f_y, f_names = get_filters('F105W - F182M vs F814W - F105W')
 
 def compute_sed_color(sed, filter_x, filter_xy, filter_y, z_arr):
     """Compute the colors of the SED at different redshifts
@@ -114,50 +123,60 @@ def compute_sed_color(sed, filter_x, filter_xy, filter_y, z_arr):
         y.append(-2.5*np.log10(sed.integrate_filter(filter_y, z=z, include_igm = True, redshift_type = 'interp')/sed.integrate_filter(filter_xy, z=z, include_igm = True, redshift_type = 'interp')))
     return x,y
 
-def plot_tracks():
+def plot_tracks(sfhz=False, spline=False):
     """
     Plot the SED colors at different redshifts for a set of templates
     """
-    zarr = np.arange(0, 12, 0.2)
+    zarr = np.arange(0, 12, 1)
     os.chdir('/Users/sam/eazy-photoz')
-    template_list = templates.read_templates_file('templates/sfhz/corr_sfhz_13.param')
-    grey_colors = [plt.cm.gray(i/len(template_list)) for i in range(len(template_list))]
-    for temp, color in zip(template_list, reversed(grey_colors)):
+    if sfhz:
+        template_list = templates.read_templates_file('templates/sfhz/corr_sfhz_13.param')
+    if spline:
+        template_list = templates.read_templates_file('templates/spline_templates_v3/c2020_spline.param')
+    colors = [plt.cm.copper(i/len(template_list)) for i in range(len(template_list))]
+    for temp, color in zip(template_list, reversed(colors)):
         AV, SFR = temp.meta['AV'], temp.meta['SFR']
         x, y = compute_sed_color(temp, f_x, f_xy, f_y, zarr)
-        plt.plot(x, y, '--', alpha=0.5, markersize=0.5, label=f'{AV}, {SFR:.2e}', c=color)
+        plt.plot(x, y, '--', lw=1, markersize=0.5, label=f'{AV}, {SFR:.2e}', c=color, zorder=1)
         for idx, z in enumerate(zarr):
             if z>=6:
-                plt.scatter(x[idx], y[idx], marker='o', c='b', s=2)
+                plt.scatter(x[idx], y[idx], marker='o', c='b', s=1, zorder=1)
                 if z in [6, 7, 8, 10, 12]:
-                    plt.annotate(f'{z}', (x[idx]+0.01, y[idx]+0.01), color='b', fontsize=8)
+                    plt.annotate(f'{z}', (x[idx]+0.01, y[idx]+0.01), color='b', fontsize=8, zorder=1)
         
-                
 
 def plot_source_color():
     """
     Plot the colors of sources in the catalog
     """
-    cat_zphot = np.genfromtxt('/Users/sam/FRESCO/Catalogs_v2/gds_zphot_catalog_filtered_corr.cat', delimiter=' ', names=True, comments='#')
+    cat_zphot = np.genfromtxt(f_path+'Catalogs_v2/gds_catalog_filtered.cat', delimiter=' ', names=True, comments='#')
     F_x_F_xy_F_y = []
     for f_name in [f_names[1], f_names[0], f_names[2]]:
-        filter_list = [filter_name[1:].lower() for filter_name in filter_dict.keys()]
-        index = np.flatnonzero(np.core.defchararray.find(list(filter_dict.keys()),f_name)!=-1)[0]
+        filter_list = [filter_name[1:].lower() for filter_name in filter_dict.keys()] # get the filter names without the 'F'
+        index = np.flatnonzero(np.core.defchararray.find(list(filter_dict.keys()),f_name)!=-1)[0] # get the index of the filter
         F_x_F_xy_F_y.append(cat_zphot[f'f_{filter_list[index]}'])
     x = -2.5*np.log10(F_x_F_xy_F_y[1]/F_x_F_xy_F_y[0])
     y = -2.5*np.log10(F_x_F_xy_F_y[2]/F_x_F_xy_F_y[1])
-    plt.scatter(x, y, marker='*', c='k', s=10, label='Sources')
+    if hexbin:
+        plt.hexbin(x, y, gridsize=35, cmap='plasma', zorder=2, bins='log')
+    else:
+        plt.scatter(x, y, marker='*', c='red', s=30, label='Sources', zorder=2)
+
 
 def colour_colour_plot():
     """
     Plot the colour-colour diagram
     """
     plt.figure(dpi=450)
-    plot_tracks()
+    plot_tracks(sfhz=True)
     plot_source_color()
-    plt.xlim(-1,1.5)
-    plt.ylim(-2,10)
+    plt.xlim(-20, 15)
+    plt.ylim(-10, 20)
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', title=r'$A_V$, sSFR [yr$^{{-1}}$]', title_fontsize=12, fontsize=12)
+    if hexbin:
+        og_handles, _ = plt.gca().get_legend_handles_labels()
+        plt.legend(handles=og_handles + [Line2D([0], [0], marker='h', color='w', label='Sources',
+                          markerfacecolor='darkblue', markersize=10)], bbox_to_anchor=(1.05, 1), loc='upper left', title=r'$A_V$, sSFR [yr$^{{-1}}$]', title_fontsize=12, fontsize=12)
     # Axes settings
     plt.gca().xaxis.set_minor_locator(AutoMinorLocator()) # set minor ticks
     plt.gca().yaxis.set_minor_locator(AutoMinorLocator())
@@ -167,9 +186,11 @@ def colour_colour_plot():
     plt.xlabel(f_names[0]+r'$-$'+f_names[1], fontsize=14)
     plt.ylabel(f_names[2]+r'$-$'+f_names[3], fontsize=14)
     plt.gca().set_box_aspect(1) # set square (equal) aspect ratio without changing data limits
-    plt.savefig('/Users/sam/Documents/GitHub/FRP/Figures/colour_colour_plot_v3.pdf', bbox_inches = 'tight')
+    plt.savefig(fig_path+'colour_colour_plot_hexbin.pdf', bbox_inches = 'tight')
     plt.show()
 
 def main():
+    global hexbin
+    hexbin = True
     colour_colour_plot()
 main()
