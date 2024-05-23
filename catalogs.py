@@ -170,6 +170,7 @@ def z_bin_selection(strictness):
         plt.xlabel(r'Strictness in $p(z)$ bin width', fontsize=14)
         plt.ylabel('Number of remaining sources', fontsize=14)
         plt.legend()
+        plt.savefig('z_bin_selection.pdf', bbox_inches='tight')
         plt.show()
     except FileNotFoundError:
         print('gds_zphot_catalog.cat not found. Run photoz_gds_catalog() first.')
@@ -189,9 +190,9 @@ def z_phot_hist():
         print('gds_zphot_catalog_filtered_corr.cat not found. Run z_bin_selection() first.')
 
 def main():
-    # full_gds_catalog()
-    # class_star_flags_nondetect_selection()
-    # photoz_gds_catalog()
+    full_gds_catalog()
+    class_star_flags_nondetect_selection()
+    photoz_gds_catalog()
     z_bin_selection(0.006)
     z_phot_hist()
 
