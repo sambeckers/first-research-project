@@ -18,14 +18,24 @@ plt.rcParams.update({
 })
 
 def get_cat_name_filter_numbers():
+    """
+    Retrieves the catalog names and filter numbers from a file.
+
+    Returns:
+        cat_names (list): A list of catalog names.
+        filter_numbers (list): A list of filter names extracted from the catalog names.
+    """
     cat_names = []
     with open(f_path / cat_filter_names, 'r') as catalog_file:
         catalog_names = catalog_file.read().splitlines()
         for cat_name in catalog_names:
             cat_names.append(cat_name)
-    return cat_names, [cat_name.split('_')[0][3:] for cat_name in cat_names] # Get the filter names from the catalog names
+    return cat_names, [cat_name.split('_')[0][3:] for cat_name in cat_names]
 
 def full_gds_catalog():
+    """
+    Generate a full catalog by combining multiple catalogs from different filters.
+    """
     # Read in the catalog names
     cat_names, filters = get_cat_name_filter_numbers()
 
@@ -35,10 +45,9 @@ def full_gds_catalog():
     for idx, cat_name in enumerate(cat_names):
         with open(cat_name, 'r') as catalog:
             for row in catalog:
-                # Skip comment lines that start with #
-                if row.startswith('#'):
+                if row.startswith('#'): # Skip comment lines that start with #
                     continue
-                row_val= row.split() # Split the row into a list of values
+                row_val = row.split() # Split the row into a list of values
                 for i in range(len(row_val)): # Loop over the values in the row
                     columns[i][idx].append(row_val[i]) # Add the value to the corresponding parameter and filter
 
@@ -80,6 +89,13 @@ def full_gds_catalog():
     os.chdir(f_path)
 
 def class_star_flags_nondetect_selection():
+    """
+    Filter the catalog based on:
+    - CLASS_STAR_444w <= 0.9 (1.0 is a star)
+    - FLAGS_444w <= 7 (accepts 1, 2, 4 and combinations)
+    - f_444w/e_444w >= 5 (SNR >= 5)
+    - Replace flux with -100.0 if flux and error are both zero (non-detection), s.t. EAZY will not observe it
+    """
     try: 
         cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog.cat', delimiter=' ', names=True, comments='#')
 
@@ -101,6 +117,9 @@ def class_star_flags_nondetect_selection():
         print(f'{cat_name}_catalog.cat not found. Run full_gds_catalog() first.')
 
 def photoz_catalog():
+    """
+    Create a catalog combining the filtered SE catalog & photometric redshifts from EAZY.
+    """
     # Read in filter names
     try: 
         _, filters = get_cat_name_filter_numbers()
@@ -148,6 +167,13 @@ def photoz_catalog():
         print(f'{cat_name}_catalog_filtered.cat not found. Run class_star_flags_selection() first.')
 
 def z_bin_selection(strictness):
+    """
+    Filter the z_phot catalog based on the strictness of the z_phot bin width.
+    Plot the number of sources remaining as a function of the strictness.
+
+    Args:
+        strictness (float): The strictness of the z_phot bin width (e.g. 0.006)
+    """
     try: 
         cat_zphot = np.genfromtxt(f_path / cat_folder / f'{cat_name}_zphot_catalog_corr.cat', delimiter=' ', names=True, comments='#')
         #(z97 - z02)/(1+z50)/2
@@ -157,6 +183,7 @@ def z_bin_selection(strictness):
         np.savetxt(f_path / cat_folder / f'{cat_name}_zphot_catalog_filtered_corr.cat', cat_zphot_filter, header=header, comments='#', fmt='%s')
         print(f'Filtered z_phot catalog saved.\nOriginal catalog: {len(cat_zphot)} sources \nFiltered catalog: {len(cat_zphot_filter)} sources, {len(cat_zphot) - len(cat_zphot_filter)} sources removed\n')
 
+        # Plot the number of sources remaining as a function of the strictness
         strictness_arr = np.linspace(0.01, 0.001, 100)
         num_sources = []
         for s in strictness_arr:
@@ -175,6 +202,9 @@ def z_bin_selection(strictness):
         print(f'{cat_name}_zphot_catalog.cat not found. Run photoz_gds_catalog() first.')
 
 def z_phot_hist():
+    """
+    Plot a histogram of the z_phot values.
+    """
     try:
         cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_zphot_catalog_filtered_corr.cat', delimiter=' ', names=True, comments='#')
         z_phot = cat['z_phot']
@@ -189,6 +219,10 @@ def z_phot_hist():
         print(f'{cat_name}_zphot_catalog_filtered_corr.cat not found. Run z_bin_selection() first.')
 
 def main():
+    """
+    Main function to run the catalog functions.
+    Adjust the global constants to match the file paths on your system/catalog
+    """
     global f_path
     f_path = Path('/Users/sam/FRESCO/') # Path to the FRESCO directory
 
