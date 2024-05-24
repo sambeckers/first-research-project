@@ -6,6 +6,7 @@ Created on 20-01-2024
 
 """
 import os
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from astropy.io import fits
@@ -15,12 +16,10 @@ plt.rcParams.update({
     "font.family": "Times New Roman",
     "font.sans-serif": "helvetica"
 })
-f_path = '/Users/sam/FRESCO/' # Path to the FRESCO directory
-os.chdir(f_path)
 
 def get_cat_name_filter_numbers():
     cat_names = []
-    with open('catalog-names_incl_f444w.txt', 'r') as catalog_file:
+    with open(f_path / cat_filter_names, 'r') as catalog_file:
         catalog_names = catalog_file.read().splitlines()
         for cat_name in catalog_names:
             cat_names.append(cat_name)
@@ -31,7 +30,7 @@ def full_gds_catalog():
     cat_names, filters = get_cat_name_filter_numbers()
 
     # Read in the catalogs
-    os.chdir(f_path+"Catalogs_v2")
+    os.chdir(f_path / cat_folder)
     columns = [[[] for _ in range(len(cat_names))] for _ in range(20)] # 20 empty lists for each parameter, empty lists within for each filter
     for idx, cat_name in enumerate(cat_names):
         with open(cat_name, 'r') as catalog:
@@ -63,7 +62,7 @@ def full_gds_catalog():
         for filter_name in filters:
             header.append(f'{param}_{filter_name}') # Add the parameter and filter to the header
 
-    with open('gds_catalog.cat', 'w') as catalog_file:
+    with open(f'{cat_name}_catalog.cat', 'w') as catalog_file:
         catalog_file.write(' '.join(header) + '\n')
         for source_idx in range(len(ID)): # Loop over the sources
             output_row = [ID[source_idx]]  # Start each row with the source ID
@@ -82,7 +81,7 @@ def full_gds_catalog():
 
 def class_star_flags_nondetect_selection():
     try: 
-        cat = np.genfromtxt('Catalogs_v2/gds_catalog.cat', delimiter=' ', names=True, comments='#')
+        cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog.cat', delimiter=' ', names=True, comments='#')
 
         sel = (cat['CLASS_STAR_444w'] <= 0.9) & (cat['FLAGS_444w'] <= 7) & (cat['f_444w']/cat['e_444w'] >= 5)
         cat_filter = cat[sel]
@@ -96,21 +95,21 @@ def class_star_flags_nondetect_selection():
                 
         # Write the filtered catalog to a new file
         header = ' '.join(cat.dtype.names)
-        np.savetxt('Catalogs_v2/gds_catalog_filtered.cat', cat_filter, header=header, comments='#', fmt='%s')
+        np.savetxt(f_path / cat_folder / f'{cat_name}_catalog_filtered.cat', cat_filter, header=header, comments='#', fmt='%s')
         print(f'Filtered catalog (class_star, flags, SNR, non-detections) saved.\nOriginal catalog: {len(cat)} sources \nFiltered catalog: {len(cat_filter)} sources, {len(cat) - len(cat_filter)} sources removed\n')
     except FileNotFoundError:
-        print('gds_catalog.cat not found. Run full_gds_catalog() first.')
+        print(f'{cat_name}_catalog.cat not found. Run full_gds_catalog() first.')
 
-def photoz_gds_catalog():
+def photoz_catalog():
     # Read in filter names
     try: 
         _, filters = get_cat_name_filter_numbers()
 
         # Read in the catalog including headers
-        cat = np.genfromtxt('catalogs_v2/gds_catalog_filtered.cat', delimiter=' ', names=True, comments='#')
+        cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog_filtered.cat', delimiter=' ', names=True, comments='#')
 
         # Read in the eazy zout catalog FITS
-        zout = fits.open('eazy outputs/gds_photoz.eazypy.zout.fits')
+        zout = fits.open(f_path / eazy_folder / f'{cat_name}_photoz.eazypy.zout.fits')
         z_phot = zout[1].data['z_phot']
         z_phot_6 = z_phot[z_phot > 6] # Select sources with z_phot > 6
 
@@ -142,20 +141,20 @@ def photoz_gds_catalog():
         })
 
         # Save DataFrame to a new .cat file
-        df.to_csv('Catalogs_v2/gds_zphot_catalog_corr.cat', sep=' ', index=False)
+        df.to_csv(f_path / cat_folder / f'{cat_name}_zphot_catalog.cat', sep=' ', index=False)
         print('Photometric redshift catalog saved\n')
         zout.close()
     except FileNotFoundError:
-        print('gds_catalog_filtered.cat not found. Run class_star_flags_selection() first.')
+        print(f'{cat_name}_catalog_filtered.cat not found. Run class_star_flags_selection() first.')
 
 def z_bin_selection(strictness):
     try: 
-        cat_zphot = np.genfromtxt('Catalogs_v2/gds_zphot_catalog_corr.cat', delimiter=' ', names=True, comments='#')
+        cat_zphot = np.genfromtxt(f_path / cat_folder / f'{cat_name}_zphot_catalog_corr.cat', delimiter=' ', names=True, comments='#')
         #(z97 - z02)/(1+z50)/2
         sel2 = (cat_zphot['z_975'] - cat_zphot['z_025'])/(1 + cat_zphot['z_500'])/2 < strictness
         cat_zphot_filter = cat_zphot[sel2]
         header = ' '.join(cat_zphot.dtype.names)
-        np.savetxt('Catalogs_v2/gds_zphot_catalog_filtered_corr.cat', cat_zphot_filter, header=header, comments='#', fmt='%s')
+        np.savetxt(f_path / cat_folder / f'{cat_name}_zphot_catalog_filtered_corr.cat', cat_zphot_filter, header=header, comments='#', fmt='%s')
         print(f'Filtered z_phot catalog saved.\nOriginal catalog: {len(cat_zphot)} sources \nFiltered catalog: {len(cat_zphot_filter)} sources, {len(cat_zphot) - len(cat_zphot_filter)} sources removed\n')
 
         strictness_arr = np.linspace(0.01, 0.001, 100)
@@ -170,30 +169,49 @@ def z_bin_selection(strictness):
         plt.xlabel(r'Strictness in $p(z)$ bin width', fontsize=14)
         plt.ylabel('Number of remaining sources', fontsize=14)
         plt.legend()
-        plt.savefig('z_bin_selection.pdf', bbox_inches='tight')
+        plt.savefig(fig_path / 'z_bin_selection.pdf', bbox_inches='tight')
         plt.show()
     except FileNotFoundError:
-        print('gds_zphot_catalog.cat not found. Run photoz_gds_catalog() first.')
+        print(f'{cat_name}_zphot_catalog.cat not found. Run photoz_gds_catalog() first.')
 
 def z_phot_hist():
     try:
-        cat = np.genfromtxt('Catalogs_v2/gds_zphot_catalog_filtered_corr.cat', delimiter=' ', names=True, comments='#')
+        cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_zphot_catalog_filtered_corr.cat', delimiter=' ', names=True, comments='#')
         z_phot = cat['z_phot']
 
         plt.figure(dpi=450)
         plt.hist(z_phot, bins=30, color='k')
         plt.xlabel(r'$\rm{z_{phot}}$', fontsize=14)
         plt.ylabel('Count', fontsize=14)
-        plt.savefig('z_phot_hist.pdf', bbox_inches='tight')
+        plt.savefig(fig_path / 'z_phot_hist.pdf', bbox_inches='tight')
         plt.show()
     except FileNotFoundError:
-        print('gds_zphot_catalog_filtered_corr.cat not found. Run z_bin_selection() first.')
+        print(f'{cat_name}_zphot_catalog_filtered_corr.cat not found. Run z_bin_selection() first.')
 
 def main():
+    global f_path
+    f_path = Path('/Users/sam/FRESCO/') # Path to the FRESCO directory
+
+    global fig_path
+    fig_path = Path('/Users/sam/Documents/GitHub/FRP/Figures/')
+
+    global cat_folder
+    cat_folder = 'Catalogs_v2'
+
+    global eazy_folder
+    eazy_folder = 'eazy outputs'
+
+    global cat_filter_names
+    cat_filter_names = 'catalog-names_incl_f444w.txt'
+
+    global cat_name
+    cat_name = 'gds'
+
     full_gds_catalog()
     class_star_flags_nondetect_selection()
-    photoz_gds_catalog()
+    photoz_catalog()
     z_bin_selection(0.006)
     z_phot_hist()
 
-main()
+if __name__ == '__main__':
+    main()
