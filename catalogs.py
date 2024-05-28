@@ -99,7 +99,7 @@ def class_star_flags_nondetect_selection():
     try: 
         cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog.cat', delimiter=' ', names=True, comments='#')
 
-        sel = (cat['CLASS_STAR_444w'] <= 0.9) & (cat['FLAGS_444w'] <= 7) & (cat['f_444w']/cat['e_444w'] >= 5)
+        sel = (cat['CLASS_STAR_444w'] < 0.8) & (cat['FLAGS_444w'] <= 7) & (cat['f_444w']/cat['e_444w'] >= 5)
         cat_filter = cat[sel]
 
         _, filters = get_cat_name_filter_numbers()
@@ -175,12 +175,12 @@ def z_bin_selection(strictness):
         strictness (float): The strictness of the z_phot bin width (e.g. 0.006)
     """
     try: 
-        cat_zphot = np.genfromtxt(f_path / cat_folder / f'{cat_name}_zphot_catalog_corr.cat', delimiter=' ', names=True, comments='#')
+        cat_zphot = np.genfromtxt(f_path / cat_folder / f'{cat_name}_zphot_catalog.cat', delimiter=' ', names=True, comments='#')
         #(z97 - z02)/(1+z50)/2
         sel2 = (cat_zphot['z_975'] - cat_zphot['z_025'])/(1 + cat_zphot['z_500'])/2 < strictness
         cat_zphot_filter = cat_zphot[sel2]
         header = ' '.join(cat_zphot.dtype.names)
-        np.savetxt(f_path / cat_folder / f'{cat_name}_zphot_catalog_filtered_corr.cat', cat_zphot_filter, header=header, comments='#', fmt='%s')
+        np.savetxt(f_path / cat_folder / f'{cat_name}_zphot_catalog_filtered.cat', cat_zphot_filter, header=header, comments='#', fmt='%s')
         print(f'Filtered z_phot catalog saved.\nOriginal catalog: {len(cat_zphot)} sources \nFiltered catalog: {len(cat_zphot_filter)} sources, {len(cat_zphot) - len(cat_zphot_filter)} sources removed\n')
 
         # Plot the number of sources remaining as a function of the strictness
@@ -206,7 +206,7 @@ def z_phot_hist():
     Plot a histogram of the z_phot values.
     """
     try:
-        cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_zphot_catalog_filtered_corr.cat', delimiter=' ', names=True, comments='#')
+        cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_zphot_catalog_filtered.cat', delimiter=' ', names=True, comments='#')
         z_phot = cat['z_phot']
 
         plt.figure(dpi=450)
@@ -216,7 +216,7 @@ def z_phot_hist():
         plt.savefig(fig_path / 'z_phot_hist.pdf', bbox_inches='tight')
         plt.show()
     except FileNotFoundError:
-        print(f'{cat_name}_zphot_catalog_filtered_corr.cat not found. Run z_bin_selection() first.')
+        print(f'{cat_name}_zphot_catalog_filtered.cat not found. Run z_bin_selection() first.')
 
 def main():
     """
