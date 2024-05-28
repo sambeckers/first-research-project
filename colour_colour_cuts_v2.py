@@ -101,7 +101,7 @@ def get_filters(filters=None):
     return fx, fxy, fy, f_name_list
 
 # Define the filters
-f_x, f_xy, f_y, f_names = get_filters('F105W - F182M vs F814W - F105W')
+f_x, f_xy, f_y, f_names = get_filters('F182M - F210M vs F814W - F182M')
 
 def compute_sed_color(sed, filter_x, filter_xy, filter_y, z_arr):
     """Compute the colors of the SED at different redshifts
@@ -169,9 +169,9 @@ def colour_colour_plot():
     """
     plt.figure(dpi=450)
     plot_tracks(sfhz=True)
-    plot_source_color()
-    plt.xlim(-20, 15)
-    plt.ylim(-10, 20)
+    # plot_source_color()
+    plt.xlim(-.5, 2)
+    plt.ylim(-1, 12)
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', title=r'$A_V$, sSFR [yr$^{{-1}}$]', title_fontsize=12, fontsize=12)
     if hexbin:
         og_handles, _ = plt.gca().get_legend_handles_labels()
@@ -186,7 +186,7 @@ def colour_colour_plot():
     plt.xlabel(f_names[0]+r'$-$'+f_names[1], fontsize=14)
     plt.ylabel(f_names[2]+r'$-$'+f_names[3], fontsize=14)
     plt.gca().set_box_aspect(1) # set square (equal) aspect ratio without changing data limits
-    plt.savefig(fig_path+'colour_colour_plot_hexbin.pdf', bbox_inches = 'tight')
+    plt.savefig(fig_path+'colour_colour_plot_v4.pdf', bbox_inches = 'tight')
     plt.show()
 
 def main():
