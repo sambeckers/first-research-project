@@ -4,8 +4,7 @@ Created on 18-02-2024
 
 @author(s): Sam Beckers
 
-Make colour-colour cuts and plot them for a given SED, colors and redshift range.
-User is prompted to enter the colours they want to plot, from which the filter transmission curves are defined.
+Make colour-colour cuts and plot them for a set of SEDs, colors and a redshift range.
 The SED is redshifted and integrated through the filters to compute the magnitudes.
 """
 from eazy import filters, templates
@@ -19,10 +18,8 @@ plt.rcParams.update({
     "font.sans-serif": "helvetica"
 })
 import numpy as np
+from pathlib import Path
 import os
-f_path = '/Users/sam/FRESCO/' # Path to the FRESCO directory
-eazy_path = '/Users/sam/eazy-photoz/'
-fig_path = '/Users/sam/Documents/GitHub/FRP/Figures/'
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -58,7 +55,7 @@ def define_eazy_filter(filter_path):
         eazy.filters.FilterDefinition: The filter definition
     """
     # Read in the filter transmission curves
-    os.chdir(f_path+'Filter throughputs')
+    os.chdir(f_path/'Filter throughputs')
     with open(filter_path, 'r') as filter_file:
         filter_data = filter_file.read().splitlines()
         wx = []
@@ -123,53 +120,82 @@ def compute_sed_color(sed, filter_x, filter_xy, filter_y, z_arr):
         y.append(-2.5*np.log10(sed.integrate_filter(filter_y, z=z, include_igm = True, redshift_type = 'interp')/sed.integrate_filter(filter_xy, z=z, include_igm = True, redshift_type = 'interp')))
     return x,y
 
-def plot_tracks(sfhz=False, spline=False):
+def plot_tracks(sfhz=False, spline=False, plot=True):
     """
     Plot the SED colors at different redshifts for a set of templates
     """
     zarr = np.arange(0, 12, 1)
-    os.chdir('/Users/sam/eazy-photoz')
+    os.chdir(eazy_path)
     if sfhz:
         template_list = templates.read_templates_file('templates/sfhz/corr_sfhz_13.param')
     if spline:
         template_list = templates.read_templates_file('templates/spline_templates_v3/c2020_spline.param')
     colors = [plt.cm.copper(i/len(template_list)) for i in range(len(template_list))]
+    x_6, y_6 = [], []
     for temp, color in zip(template_list, reversed(colors)):
         AV, SFR = temp.meta['AV'], temp.meta['SFR']
         x, y = compute_sed_color(temp, f_x, f_xy, f_y, zarr)
-        plt.plot(x, y, '--', lw=1, markersize=0.5, label=f'{AV}, {SFR:.2e}', c=color, zorder=1)
+        if plot:
+            plt.plot(x, y, '--', lw=1, markersize=0.5, label=f'{AV}, {SFR:.2e}', c=color, zorder=1, alpha=0.7)
         for idx, z in enumerate(zarr):
             if z>=6:
-                plt.scatter(x[idx], y[idx], marker='o', c='b', s=1, zorder=1)
-                if z in [6, 7, 8, 10, 12]:
-                    plt.annotate(f'{z}', (x[idx]+0.01, y[idx]+0.01), color='b', fontsize=8, zorder=1)
-        
+                if plot: 
+                    plt.scatter(x[idx], y[idx], marker='o', c='b', s=1, zorder=1)
+                    if z in [6, 7, 8, 10, 12]:
+                        plt.annotate(f'{z}', (x[idx]+0.01, y[idx]+0.01), color='b', fontsize=8, zorder=1)
+            if z==6:
+                x_6.append(x[idx])
+                y_6.append(y[idx])
+    return x_6, y_6        
 
-def plot_source_color():
+def plot_source_color_and_save_cuts(slope):
     """
     Plot the colors of sources in the catalog
+    Make a colour cut and save the selected sources
+
+    Args:
+        slope (float): The slope of the linear fit to the z=6 points
     """
-    cat_zphot = np.genfromtxt(f_path+'Catalogs_v2/gds_catalog_filtered.cat', delimiter=' ', names=True, comments='#')
+    cat_SE = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog_filtered.cat', delimiter=' ', names=True, comments='#')
     F_x_F_xy_F_y = []
     for f_name in [f_names[1], f_names[0], f_names[2]]:
         filter_list = [filter_name[1:].lower() for filter_name in filter_dict.keys()] # get the filter names without the 'F'
         index = np.flatnonzero(np.core.defchararray.find(list(filter_dict.keys()),f_name)!=-1)[0] # get the index of the filter
-        F_x_F_xy_F_y.append(cat_zphot[f'f_{filter_list[index]}'])
+        F_x_F_xy_F_y.append(cat_SE[f'f_{filter_list[index]}'])
     x = -2.5*np.log10(F_x_F_xy_F_y[1]/F_x_F_xy_F_y[0])
     y = -2.5*np.log10(F_x_F_xy_F_y[2]/F_x_F_xy_F_y[1])
-    if hexbin:
-        plt.hexbin(x, y, gridsize=35, cmap='plasma', zorder=2, bins='log')
-    else:
-        plt.scatter(x, y, marker='*', c='red', s=30, label='Sources', zorder=2)
 
+    sel = (y>2) & (x<1) & (y>(slope*x+2)) # Boolean function of colour cut
+    if hexbin:
+        plt.hexbin(x[~sel], y[~sel], gridsize=1000, cmap='plasma', zorder=1, bins='log', alpha=0.9) #~ is the logical NOT operator
+        plt.scatter(x[sel], y[sel], marker='s', edgecolor='k', c='red', s=15, label=r'$z \geq 6$', zorder=2)
+    else:
+        plt.scatter(x, y, marker='*', c='red', s=15, label='Sources', zorder=2)
+
+    # Write new catalog with selected sources
+    header = ' '.join(cat_SE.dtype.names)
+    selected_catalog = cat_SE[sel]
+    np.savetxt(f_path / cat_folder / f'{cat_name}_catalog_colourcut_sel.cat', selected_catalog, header=header, comments='#', fmt='%s')
 
 def colour_colour_plot():
     """
     Plot the colour-colour diagram
     """
     plt.figure(dpi=450)
-    plot_tracks(sfhz=True)
-    # plot_source_color()
+    x_6, y_6 = plot_tracks(sfhz=True)
+
+    # Calculate cuts
+    slope = np.polyfit(x_6, y_6, 1)[0] # linear fit to z=6 points
+    def fit(x, intercept=2):
+        return slope*x + intercept # fit function
+    x_cut = np.linspace(0, 1, 100)
+
+    # Plot the cuts
+    plt.plot(x_cut, fit(x_cut), lw=1.5, c='red', zorder=3)
+    plt.hlines(y=2, xmin=-.5, xmax=0, lw=1.5, color='red', zorder=3)
+    plt.vlines(x=1, ymin=fit(x_cut)[-1], ymax=12, lw=1.5, color='red', zorder=3)
+
+    plot_source_color_and_save_cuts(slope)
     plt.xlim(-.5, 2)
     plt.ylim(-1, 12)
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', title=r'$A_V$, sSFR [yr$^{{-1}}$]', title_fontsize=12, fontsize=12)
@@ -185,12 +211,21 @@ def colour_colour_plot():
     plt.tick_params(which='minor', length=3)     
     plt.xlabel(f_names[0]+r'$-$'+f_names[1], fontsize=14)
     plt.ylabel(f_names[2]+r'$-$'+f_names[3], fontsize=14)
+    plt.title(r'F814W-dropout ($z\sim6$)', fontsize=14)
     plt.gca().set_box_aspect(1) # set square (equal) aspect ratio without changing data limits
-    plt.savefig(fig_path+'colour_colour_plot_v4.pdf', bbox_inches = 'tight')
+    plt.tight_layout()
+    plt.savefig(fig_path / 'colour_colour_plot_v4.pdf', bbox_inches = 'tight')
     plt.show()
 
 def main():
-    global hexbin
+    global f_path, eazy_path, fig_path, cat_folder, cat_name, hexbin
+    f_path = Path('/Users/sam/FRESCO/') # Path to the FRESCO directory
+    eazy_path = Path('/Users/sam/eazy-photoz/')
+    fig_path = Path('/Users/sam/Documents/GitHub/FRP/Figures/')
+    cat_folder = 'Catalogs_v2'
+    cat_name = 'gds'
     hexbin = True
     colour_colour_plot()
-main()
+
+if __name__ == '__main__':
+    main()

@@ -223,22 +223,12 @@ def main():
     Main function to run the catalog functions.
     Adjust the global constants to match the file paths on your system/catalog
     """
-    global f_path
+    global f_path, fig_path, cat_folder, eazy_folder, cat_filter_names, cat_name
     f_path = Path('/Users/sam/FRESCO/') # Path to the FRESCO directory
-
-    global fig_path
     fig_path = Path('/Users/sam/Documents/GitHub/FRP/Figures/')
-
-    global cat_folder
     cat_folder = 'Catalogs_v2'
-
-    global eazy_folder
     eazy_folder = 'eazy outputs'
-
-    global cat_filter_names
     cat_filter_names = 'catalog-names_incl_f444w.txt'
-
-    global cat_name
     cat_name = 'gds'
 
     full_gds_catalog()
