@@ -218,6 +218,23 @@ def z_phot_hist():
     except FileNotFoundError:
         print(f'{cat_name}_zphot_catalog_filtered.cat not found. Run z_bin_selection() first.')
 
+def final_catalog():
+    try:
+        cat_cc = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog_colourcut_sel.cat', delimiter=' ', names=True, comments='#')
+        cat_zphot = np.genfromtxt(f_path / cat_folder / f'{cat_name}_photoz_final_v2.cat', delimiter=' ', names=True, comments='#')
+        print(cat_zphot['ID'])
+
+        count = 0
+        print('Sources in both catalogs:')
+        for id in cat_cc['id']:
+            if id in cat_zphot['ID']:
+                print(f'{id}, z_phot={cat_zphot[cat_zphot["ID"] == id]["z_phot"][0]}')
+                count += 1
+        print(f'Count: {count}')
+        
+    except FileNotFoundError:
+        print(f'{cat_name}_catalog_colourcut_sel.cat or {cat_name}_zphot_catalog_final.cat not found. Run colour_colour_cuts_v2.py or photoz_gds.ipynb first.')
+            
 def main():
     """
     Main function to run the catalog functions.
@@ -231,11 +248,12 @@ def main():
     cat_filter_names = 'catalog-names_incl_f444w.txt'
     cat_name = 'gds'
 
-    full_gds_catalog()
-    class_star_flags_nondetect_selection()
-    photoz_catalog()
-    z_bin_selection(0.006)
-    z_phot_hist()
+    # full_gds_catalog()
+    # class_star_flags_nondetect_selection()
+    # photoz_catalog()
+    # z_bin_selection(0.006)
+    # z_phot_hist()
+    final_catalog()
 
 if __name__ == '__main__':
     main()

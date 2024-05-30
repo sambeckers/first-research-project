@@ -55,7 +55,8 @@ def define_eazy_filter(filter_path):
         eazy.filters.FilterDefinition: The filter definition
     """
     # Read in the filter transmission curves
-    os.chdir(f_path/'Filter throughputs')
+    f_path = Path('/Users/sam/FRESCO/') # Path to the FRESCO directory
+    os.chdir(f_path / 'Filter throughputs')
     with open(filter_path, 'r') as filter_file:
         filter_data = filter_file.read().splitlines()
         wx = []
@@ -227,5 +228,4 @@ def main():
     hexbin = True
     colour_colour_plot()
 
-if __name__ == '__main__':
-    main()
+main()
