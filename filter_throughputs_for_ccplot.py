@@ -3,8 +3,6 @@ filter_throughputs_for_ccplot
 Created on 18-02-2024
 
 @author(s): Sam Beckers
-
-
 """
 from eazy import filters, templates
 import matplotlib.pyplot as plt

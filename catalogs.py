@@ -222,7 +222,7 @@ def final_catalog():
     try:
         cat_cc = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog_colourcut_sel.cat', delimiter=' ', names=True, comments='#')
         cat_zphot = np.genfromtxt(f_path / cat_folder / f'{cat_name}_photoz_final_v2.cat', delimiter=' ', names=True, comments='#')
-        print(cat_zphot['ID'])
+        print(len(cat_zphot['ID']))
 
         count = 0
         print('Sources in both catalogs:')
