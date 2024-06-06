@@ -9,6 +9,7 @@ plt.rcParams.update({
 import warnings
 warnings.filterwarnings("ignore")
 import numpy as np
+import pandas as pd
 from matplotlib.lines import Line2D
 from astropy.io import fits
 from astropy import units as u
@@ -44,7 +45,7 @@ def open_cats(cat_file):
     
     return self, cat, id, nusefilt, images
 
-def show_cat_fits(self, cat, id, nusefilt, images, f_names, cc=False):
+def show_cat_fits(self, cat, id, nusefilt, images, f_names):
     """Show fits for all objects in the catalog.
 
     Args:
@@ -56,8 +57,8 @@ def show_cat_fits(self, cat, id, nusefilt, images, f_names, cc=False):
         f_names (list) : List of filter names
         cc (bool, optional) : If True, only show fits for objects with z > 6 (for colour-cut selection). Defaults to False.
     """
-    match_template_arr = []
-    for ID, RA, DEC in tqdm(zip(cat['ID'], cat['ra'], cat['dec']), total=len(cat['ID'])):
+    id_z_6 = []
+    for idx, (ID, RA, DEC) in tqdm(enumerate(zip(cat['ID'], cat['ra'], cat['dec'])), total=len(cat['ID'])):
         # Get the redshift from the zbest column
         ix = self.idx[self.OBJID == ID][0]
         z = self.zbest[ix]
@@ -65,7 +66,7 @@ def show_cat_fits(self, cat, id, nusefilt, images, f_names, cc=False):
             if z < 6.0:
                 continue # Skip objects with z < 6
         with plt.ioff():
-            print(z)
+            # print(z)
             fig, dir = self.show_fit(float(ID), template_color='red', logpz=False, add_label=False) # show_fit method from eazy.photoz.PhotoZ
 
             # Calculate the reduced chi^2
@@ -94,9 +95,6 @@ def show_cat_fits(self, cat, id, nusefilt, images, f_names, cc=False):
                     non_empty_images.append(cutout)
                     non_empty_names.append(name)
             
-            if 'F444W' in non_empty_names:
-                match_template_arr.append(non_empty_images[-1])
-            
             # Dynamic grid sizing based on number of non-empty images
             n_images = len(non_empty_images)
             if max(nusefilt) > 18:
@@ -124,9 +122,11 @@ def show_cat_fits(self, cat, id, nusefilt, images, f_names, cc=False):
             
             fig.subplots_adjust(bottom=pos0.y1 + 0.05, top=pos0.y1 + 0.9, left=pos0.x0 - 0.1, right=pos1.x1)
             plt.savefig(fig_fits_path / f'gds_photoz_fit_{str(ID)}.pdf', dpi=450, bbox_inches='tight')
+            id_z_6.append(ID)
+    pd.DataFrame({'ID (z>6)':id_z_6}).to_csv(fig_fits_path / 'id_z_6.cat', index=False)
 
 def main():
-    global f_path, fig_path, fig_fits_path, cat_folder, eazy_folder, cat_filter_names, cat_name
+    global f_path, fig_path, fig_fits_path, cat_folder, eazy_folder, cat_filter_names, cat_name, cc, inspect
     f_path = Path('/Users/sam/FRESCO/') # Path to the FRESCO directory
     fig_path = Path('/Users/sam/Documents/GitHub/FRP/Figures/')
     fig_fits_path = fig_path / 'colour_colour_fits/'
@@ -135,9 +135,13 @@ def main():
     cat_filter_names = 'catalog-names_incl_f444w.txt'
     cat_name = 'gds'
     f_names = ['F336WU', 'F435W', 'F475W', 'F606W', 'F606WU', 'F775W', 'F814W', 'F814WU', 'F850LP', 'F850LPU', 'F105W', 'F110W', 'F125W', 'F140W', 'F160W', 'F182M', 'F210M', 'F430M', 'F460M', 'F480M', 'F444W']
-
-    main_cat = f'{cat_name}_zphot_catalog_filtered.cat'
-    show_cat_fits(*open_cats(main_cat), f_names, cc=True)
+    cc = True
+    if cc:
+        fig_fits_path = fig_path / 'colour_colour_fits/'
+        show_cat_fits(*open_cats(f'{cat_name}_catalog_colourcut_sel_formatted.cat'), f_names)
+    else:
+        fig_fits_path = fig_path / 'eazy_fits/'
+        show_cat_fits(*open_cats(f'{cat_name}_zphot_catalog_filtered.cat'), f_names)
 
 if __name__ == '__main__':
     main()

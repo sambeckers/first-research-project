@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 from astropy.io import fits
 import matplotlib.pyplot as plt
+from PyPDF2 import PdfMerger
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "Times New Roman",
@@ -218,6 +219,30 @@ def z_phot_hist():
     except FileNotFoundError:
         print(f'{cat_name}_zphot_catalog_filtered.cat not found. Run z_bin_selection() first.')
 
+def format_cc_sel_catalog():
+    try:
+        cat_cc = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog_colourcut_sel.cat', delimiter=' ', names=True, comments='#')
+        _, filters = get_cat_name_filter_numbers()
+        flux = [[] for _ in range(len(filters))]
+        flux_err = [[] for _ in range(len(filters))]
+        mag_aper = [[] for _ in range(len(filters))]
+        for idx, filter in enumerate(filters):
+            flux[idx] = cat_cc[f'f_{filter}']
+            flux_err[idx] = cat_cc[f'e_{filter}']
+            mag_aper[idx] = cat_cc[f'MAG_APER_{filter}']
+        df = pd.DataFrame({
+            'ID': cat_cc['id'],
+            'ra': cat_cc['ALPHA_J2000_444w'],
+            'dec': cat_cc['DELTA_J2000_444w'],
+            **{f'f_{filter}': flux[idx] for idx, filter in enumerate(filters)},
+            **{f'e_{filter}': flux_err[idx] for idx, filter in enumerate(filters)},
+            **{f'MAG_APER_{filter}': mag_aper[idx] for idx, filter in enumerate(filters)}
+        })
+        df.to_csv(f_path / cat_folder / f'{cat_name}_catalog_colourcut_sel_formatted.cat', sep=' ', index=False)
+        print('Formatted colour-cut selection catalog saved\n')
+    except FileNotFoundError:
+        print(f'{cat_name}_catalog_colourcut_sel.cat not found. Run colour_colour_cuts_v2.py first.')
+
 def final_catalog():
     try:
         cat_cc = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog_colourcut_sel.cat', delimiter=' ', names=True, comments='#')
@@ -234,7 +259,62 @@ def final_catalog():
         
     except FileNotFoundError:
         print(f'{cat_name}_catalog_colourcut_sel.cat or {cat_name}_zphot_catalog_final.cat not found. Run colour_colour_cuts_v2.py or photoz_gds.ipynb first.')
-            
+
+def cat_from_IDs():
+    IDs = [141.0, 207.0,  340.0, 402.0, 743.0, 747.0, 789.0, 799.0, 1574.0, 1814.0, 1838.0, 2039.0, 2403.0, 
+           2472.0, 2478.0, 2610.0, 2993.0, 3019.0, 3173.0, 3326.0, 3363.0, 3516.0, 3685.0, 3772.0, 3810.0,
+           4231.0, 4689.0, 4760.0, 5093.0, 5204.0, 5378.0, 5614.0, 5844.0, 6016.0, 6030.0, 6174.0, 6491.0,
+           7037.0, 7058.0, 7914.0, 8158.0, 8223.0, 8296.0, 8432.0, 8474.0, 8556.0, 8620.0, 
+           8655.0, 8665.0, 8775.0, 8857.0, 8978.0, 9183.0, 9239.0, 9328.0, 9359.0, 9554.0, 9649.0, 10041.0, 10089.0, 
+           10394.0, 10491.0, 10782.0, 10839.0, 11131.0, 11205.0, 11286.0, 11301.0, 11366.0, 11629.0, 11685.0, 
+           11895.0, 11992.0, 12436.0, 12799.0, 12925.0, 13464.0, 13762.0, 13932.0, 13953.0, 13965.0, 14145.0,
+           14155.0, 14219.0, 14430.0, 14529.0, 14962.0, 14992.0, 15200.0, 15208.0, 15229.0, 15255.0, 15367.0,
+           16081.0, 16366.0, 16419.0, 16435.0, 16622.0, 16661.0, 16686.0, 16733.0, 16751.0, 16897.0, 17096.0,
+           17250.0, 17279.0, 17873.0, 18105.0, 18146.0, 18741.0, 18806.0, 18907.0, 18911.0, 19101.0, 19691.0, 
+           19742.0, 19844.0, 20426.0, 20656.0, 20789.0, 20947.0, 20970.0, 21499.0, 21692.0, 21724.0, 21926.0]
+    cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog_colourcut_sel_formatted.cat', delimiter=' ', names=True, comments='#')
+    sel = np.isin(cat['ID'], IDs) # Match the IDs in the catalog with the IDs in the list
+    for idx, i in enumerate(np.isin(IDs, cat['ID'][sel])):
+        if not i:
+            print(f'{IDs[idx]} not in photometric catalog. Check for typos / wrong catalog.')
+    df = pd.DataFrame(cat[sel])
+
+    zout = fits.open(f_path / eazy_folder / f'{cat_name}_photoz.eazypy.zout.fits')
+    sel2 = np.isin(zout[1].data['id'], IDs) # Match the IDs in the zout catalog with the IDs in the list
+    for idx, i in enumerate(np.isin(IDs, zout[1].data['id'][sel2])):
+        if not i:
+            print(f'{IDs[idx]} not in zout catalog. Check for typos / wrong catalog.')
+    z_phot = zout[1].data['z_phot']
+    df.insert(1, 'z_phot', z_phot[sel2].byteswap().newbyteorder()) # Insert z_phot column at 1st index. byteswap and newbyteorder to fix endianness
+
+    df.to_csv(f_path / cat_folder / f'{cat_name}_catalog_colourcut_sel_formatted_vi.cat', sep=' ', index=False)
+
+    def plot_merger(IDs, name):
+        """
+        Merge the PDFs of the colour-colour fits for the selected sources.
+
+        Args:
+            IDs (list): A list of source IDs to merge.
+        """
+        merger = PdfMerger()
+        for id in IDs:
+            # Open each PDF file and append it to the merger
+            with open(fig_path / f'colour_colour_fits/gds_photoz_fit_{id}.pdf', 'rb') as f:
+                merger.append(f)
+        # Write the merged PDF to the output file
+        with open(fig_path / f'colour_colour_fits/{name}.pdf', 'wb') as f:
+            merger.write(f)
+
+    plot_merger(IDs, 'colour_cut_sel_fits_vi')
+
+    id_z_6 = pd.read_csv(fig_path/ 'colour_colour_fits/id_z_6.cat')
+    sel3 = np.isin(id_z_6['ID (z>6)'], IDs)
+    plot_merger(id_z_6['ID (z>6)'][~sel3], 'colour_cut_sel_vi_rejected')
+    plot_merger([340.0, 743.0, 747.0, 789.0, 799.0, 1574.0, 1814.0, 2610.0, 3019.0, 3363.0, 3516.0, 3685.0, 
+                3772.0, 5378.0, 7037.0, 7914.0, 8556.0, 8665.0, 9328.0, 11286.0, 11895.0, 14430.0, 14529.0,
+                15367.0, 16686.0, 16751.0, 16897.0, 18146.0, 21724.0, 21926.0], 'colour_cut_sel_vi_candidates')
+    
+
 def main():
     """
     Main function to run the catalog functions.
@@ -253,7 +333,9 @@ def main():
     # photoz_catalog()
     # z_bin_selection(0.006)
     # z_phot_hist()
-    final_catalog()
+    # format_cc_sel_catalog()
+    # final_catalog()
+    cat_from_IDs()
 
 if __name__ == '__main__':
     main()
