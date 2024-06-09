@@ -110,7 +110,7 @@ template_list = templates.read_templates_file('templates/spline_templates_v3/c20
 print(template_list)
 # SED = '/Users/sam/eazy-photoz/templates/spline_templates_v3/spline_age0.31_av1.0.fits'
 
-os.chdir('/Users/sam/FRESCO/Filter throughputs')
+os.chdir('/Users/sam/FRESCO/filter_throughputs')
 # Define the filters
 filter_dict = {'F336WU': 'HST_WFC3_UVIS1.F336W.dat',
                 'F435W': 'HST_ACS_WFC.F435W.dat',
@@ -120,7 +120,7 @@ filter_dict = {'F336WU': 'HST_WFC3_UVIS1.F336W.dat',
                 'F775W': 'HST_ACS_WFC.F775W.dat',
                 'F814W': 'HST_ACS_WFC.F814W.dat',
                 'F814WU': 'HST_WFC3_UVIS1.F814W.dat',
-                'F850LP': 'HST_WFC3_UVIS1.F850LP.dat',
+                'F850LP': 'HST_ACS_WFC.F850LP.dat',
                 'F850LPU': 'HST_WFC3_UVIS1.F850LP.dat',
                 'F105W': 'HST_WFC3_IR.F105W.dat',
                 'F110W': 'HST_WFC3_IR.F110W.dat',

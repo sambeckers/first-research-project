@@ -1,3 +1,13 @@
+"""
+show_photoz_fits
+Created on 01-06-2024
+
+@author(s): Sam Beckers
+
+This script is used to show the fits for all objects in the catalog. The fits are shown in the Eazy photoz plot, with the cutouts of the images above the plot. 
+The fits are saved as pdf files in the specified folder.
+"""
+
 import os
 from pathlib import Path
 import matplotlib.pyplot as plt

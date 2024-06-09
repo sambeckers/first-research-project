@@ -32,7 +32,7 @@ filter_dict = {'F336WU': 'HST_WFC3_UVIS1.F336W.dat',
                 'F775W': 'HST_ACS_WFC.F775W.dat',
                 'F814W': 'HST_ACS_WFC.F814W.dat',
                 'F814WU': 'HST_WFC3_UVIS1.F814W.dat',
-                'F850LP': 'HST_WFC3_UVIS1.F850LP.dat',
+                'F850LP': 'HST_ACS_WFC.F850LP.dat',
                 'F850LPU': 'HST_WFC3_UVIS1.F850LP.dat',
                 'F105W': 'HST_WFC3_IR.F105W.dat',
                 'F110W': 'HST_WFC3_IR.F110W.dat',
@@ -56,7 +56,7 @@ def define_eazy_filter(filter_path):
     """
     # Read in the filter transmission curves
     f_path = Path('/Users/sam/FRESCO/') # Path to the FRESCO directory
-    os.chdir(f_path / 'Filter throughputs')
+    os.chdir(f_path / 'filter_throughputs')
     with open(filter_path, 'r') as filter_file:
         filter_data = filter_file.read().splitlines()
         wx = []
