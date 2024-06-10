@@ -3,8 +3,6 @@ bagpipes_gds
 Created on 01-06-2024
 
 @author(s): Sam Beckers
-
-
 """
 
 import numpy as np 
@@ -23,12 +21,13 @@ cat_filter_names = 'catalog-names_incl_f444w.txt'
 cat_name = 'gds'
 
 
-def load_goodss(ID):
-    """ Load  photometry from catalogue. """
+def load_phot(ID):
+    """ Load  photometry from catalogue."""
 
     # load up the relevant columns from the catalogue.
     cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog_colourcut_sel_formatted_vi.cat', delimiter=' ', names=True, comments='#')
     
+    # get the names of the flux and error columns.
     f_header, e_header = [], []
     for n in cat.dtype.names:
         if n.startswith('f_'):
@@ -36,12 +35,19 @@ def load_goodss(ID):
         if n.startswith('e_'):
             e_header.append(n)
     
+    # get the fluxes and errors for the object with the given ID.
     flux, flux_err = [], []
     for f, e in zip(f_header, e_header):
         flux.append(cat[float(ID)==(cat['ID'])][f][0])
         flux_err.append(cat[float(ID)==(cat['ID'])][e][0])
     
+    # turn the fluxes and errors into a 2D array (required by BAGPIPES)
     photometry = np.c_[flux, flux_err]
+
+    # blow up the errors associated with any missing fluxes.
+    for i in range(len(photometry)):
+        if (photometry[i, 0] == 0.) or (photometry[i, 1] <= 0):
+            photometry[i,:] = [0., 9.9*10**99.]
 
     return photometry
 
@@ -50,29 +56,45 @@ def load_goodss(ID):
 filters= np.loadtxt(f_path / f'{cat_name}_filter_paths.txt', dtype="str") # Load filter paths
 # print(filters)
 
-galaxy = pipes.galaxy("2472", load_goodss, spectrum_exists=False, filt_list=filters)
+galaxy = pipes.galaxy("402", load_phot, spectrum_exists=False, filt_list=filters)
 galaxy.plot()
 
-exp = {}                                  # Tau-model star-formation history component
-exp["age"] = (0., 15.)                   # Vary age between 100 Myr and 15 Gyr. In practice 
-                                          # the code automatically limits this to the age of
-                                          # the Universe at the observed redshift.
+dblplaw = {}                        
+dblplaw["tau"] = (0., 15.)                # Vary the time of peak star-formation between
+                                          # the Big Bang at 0 Gyr and 15 Gyr later. In 
+                                          # practice the code automatically stops this
+                                          # exceeding the age of the universe at the 
+                                          # observed redshift.
+            
+dblplaw["alpha"] = (0.01, 1000.)          # Vary the falling power law slope from 0.01 to 1000.
+dblplaw["beta"] = (0.01, 1000.)           # Vary the rising power law slope from 0.01 to 1000.
+dblplaw["alpha_prior"] = "log_10"         # Impose a prior which is uniform in log_10 of the 
+dblplaw["beta_prior"] = "log_10"          # parameter between the limits which have been set 
+                                          # above as in Carnall et al. (2017).
+dblplaw["massformed"] = (1., 15.)
+dblplaw["metallicity"] = (0., 2.5)
 
-exp["tau"] = (0.3, 10.)                   # Vary tau between 300 Myr and 10 Gyr
-exp["massformed"] = (1., 15.)             # vary log_10(M*/M_solar) between 1 and 15
-exp["metallicity"] = (0., 2.5)            # vary Z between 0 and 2.5 Z_oldsolar
+dust = {}                           
+dust["type"] = "Calzetti"
+dust["Av"] = (0., 2.)
 
-dust = {}                                 # Dust component
-dust["type"] = "Calzetti"                 # Define the shape of the attenuation curve
-dust["Av"] = (0., 2.)                     # Vary Av between 0 and 2 magnitudes
+nebular = {}
+nebular["logU"] = -3.
 
-fit_instructions = {}                     # The fit instructions dictionary
-fit_instructions["redshift"] = (0., 10.)  # Vary observed redshift from 0 to 10
-fit_instructions["exponential"] = exp   
-fit_instructions["dust"] = dust
+fit_info = {}                            # The fit instructions dictionary
+fit_info["redshift"] = (0., 10.)         # Vary observed redshift from 0 to 10
 
-fit = pipes.fit(galaxy, fit_instructions)
+fit_info["redshift_prior"] = "Gaussian"  # From looking at the spectrum in Example 2 it's
+fit_info["redshift_prior_mu"] = 1.0      # clear that this  object is at around z = 1. We'll 
+fit_info["redshift_prior_sigma"] = 0.25  # include that information with a broad Gaussian
+                                         # prior centred on redshift 1. Parameters of priors
+                                         # are passed starting with "parameter_prior_".
+fit_info["dblplaw"] = dblplaw 
+fit_info["dust"] = dust
+fit_info["nebular"] = nebular
+
+fit = pipes.fit(galaxy, fit_info, run="dblplaw_sfh")
 
 fit.fit(verbose=False)
 
-fig = fit.plot_spectrum_posterior(save=False, show=True)
+fig = fit.plot_spectrum_posterior(save=True, show=True)
