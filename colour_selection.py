@@ -22,29 +22,7 @@ from pathlib import Path
 import os
 import warnings
 warnings.filterwarnings("ignore")
-
-# Define the filter file names
-filter_dict = {'F336WU': 'HST_WFC3_UVIS1.F336W.dat',
-                'F435W': 'HST_ACS_WFC.F435W.dat',
-                'F475W': 'HST_ACS_WFC.F475W.dat',
-                'F606W': 'HST_ACS_WFC.F606W.dat',
-                'F606WU': 'HST_WFC3_UVIS1.F606W.dat',
-                'F775W': 'HST_ACS_WFC.F775W.dat',
-                'F814W': 'HST_ACS_WFC.F814W.dat',
-                'F814WU': 'HST_WFC3_UVIS1.F814W.dat',
-                'F850LP': 'HST_ACS_WFC.F850LP.dat',
-                'F850LPU': 'HST_WFC3_UVIS1.F850LP.dat',
-                'F105W': 'HST_WFC3_IR.F105W.dat',
-                'F110W': 'HST_WFC3_IR.F110W.dat',
-                'F125W': 'HST_WFC3_IR.F125W.dat',
-                'F140W': 'HST_WFC3_IR.F140W.dat',
-                'F160W': 'HST_WFC3_IR.F160W.dat',
-                'F182M': 'JWST_NIRCam.F182M.dat',
-                'F210M': 'JWST_NIRCam.F210M.dat',
-                'F430M': 'JWST_NIRCam.F430M.dat',
-                'F460M': 'JWST_NIRCam.F460M.dat',
-                'F480M': 'JWST_NIRCam.F480M.dat',
-                'F444W': 'JWST_NIRCam.F444W.dat',}
+from paths_and_global_vars import *
 
 def define_eazy_filter(filter_path):
     """Define the filter transmission curve, compatible with eazy
@@ -219,12 +197,12 @@ def colour_colour_plot():
     plt.show()
 
 def main():
-    global f_path, eazy_path, fig_path, cat_folder, cat_name, hexbin
-    f_path = Path('/Users/sam/FRESCO/') # Path to the FRESCO directory
-    eazy_path = Path('/Users/sam/eazy-photoz/')
-    fig_path = Path('/Users/sam/Documents/GitHub/FRP/Figures/')
-    cat_folder = 'Catalogs_v2'
-    cat_name = 'gds'
+    global hexbin
+    # f_path = Path('/Users/sam/FRESCO/') # Path to the FRESCO directory
+    # eazy_path = Path('/Users/sam/eazy-photoz/')
+    # fig_path = Path('/Users/sam/Documents/GitHub/FRP/Figures/')
+    # cat_folder = 'Catalogs_v2'
+    # cat_name = 'gds'
     hexbin = True
     colour_colour_plot()
 

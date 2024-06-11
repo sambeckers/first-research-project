@@ -17,6 +17,7 @@ plt.rcParams.update({
     "font.family": "Times New Roman",
     "font.sans-serif": "helvetica"
 })
+from paths_and_global_vars import *
 
 def get_cat_name_filter_numbers():
     """
@@ -320,14 +321,6 @@ def main():
     Main function to run the catalog functions.
     Adjust the global constants to match the file paths on your system/catalog
     """
-    global f_path, fig_path, cat_folder, eazy_folder, cat_filter_names, cat_name
-    f_path = Path('/Users/sam/FRESCO/') # Path to the FRESCO directory
-    fig_path = Path('/Users/sam/Documents/GitHub/FRP/Figures/')
-    cat_folder = 'Catalogs_v2'
-    eazy_folder = 'eazy outputs'
-    cat_filter_names = 'catalog-names_incl_f444w.txt'
-    cat_name = 'gds'
-
     # full_gds_catalog()
     # class_star_flags_nondetect_selection()
     # photoz_catalog()

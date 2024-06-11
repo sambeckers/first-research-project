@@ -4,7 +4,6 @@ Created on 01-06-2024
 
 @author(s): Sam Beckers
 """
-
 import numpy as np 
 import bagpipes as pipes
 import matplotlib.pyplot as plt

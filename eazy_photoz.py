@@ -11,7 +11,13 @@ os.chdir('/Users/sam/eazy-photoz') # Change to the eazy-photoz directory
 print(os.getcwd())
 import numpy as np
 import matplotlib.pyplot as plt
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "Times New Roman",
+    "font.sans-serif": "helvetica"
+})
 import eazy
+import eazy.hdf5
 
 # Suppress warnings
 import warnings
@@ -37,10 +43,9 @@ params['PRIOR_FILTER'] = 375
 params['MW_EBV'] = 0.1909 # Milky Way E(B-V) reddening
 params['CAT_HAS_EXTCORR'] = False # Catalog has extinction correction
 
-# Planck flat lambda CDM cosmology (Plank Colloboration et al. 2020)
-params['H0'] = 67.36
-params['OMEGA_M'] = 0.3153
-params['OMEGA_L'] = 0.6847 
+params['H0'] = 70.0
+params['OMEGA_M'] = 0.3
+params['OMEGA_L'] = 0.7
 
 params['WAVELENGTH_FILE'] = 'templates/uvista_nmf/lambda.def'
 params['PRIOR_FILE'] = 'templates/prior_F160W_TAO.dat'
@@ -62,3 +67,5 @@ self.fit_catalog()
 # Save the results
 self.standard_output()
 
+# Write to HDF5 file
+eazy.hdf5.write_hdf5(self, h5file=self.param['MAIN_OUTPUT_FILE'] + '.h5')

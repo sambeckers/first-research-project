@@ -30,6 +30,7 @@ from matplotlib.gridspec import GridSpec
 from tqdm import tqdm
 import eazy
 import eazy.hdf5
+from paths_and_global_vars import *
 os.chdir('/Users/sam/eazy-photoz') 
 
 def open_cats(cat_file):
@@ -136,15 +137,7 @@ def show_cat_fits(self, cat, id, nusefilt, images, f_names):
     pd.DataFrame({'ID (z>6)':id_z_6}).to_csv(fig_fits_path / 'id_z_6.cat', index=False)
 
 def main():
-    global f_path, fig_path, fig_fits_path, cat_folder, eazy_folder, cat_filter_names, cat_name, cc, inspect
-    f_path = Path('/Users/sam/FRESCO/') # Path to the FRESCO directory
-    fig_path = Path('/Users/sam/Documents/GitHub/FRP/Figures/')
-    fig_fits_path = fig_path / 'colour_colour_fits/'
-    cat_folder = 'Catalogs_v2'
-    eazy_folder = 'eazy outputs'
-    cat_filter_names = 'catalog-names_incl_f444w.txt'
-    cat_name = 'gds'
-    f_names = ['F336WU', 'F435W', 'F475W', 'F606W', 'F606WU', 'F775W', 'F814W', 'F814WU', 'F850LP', 'F850LPU', 'F105W', 'F110W', 'F125W', 'F140W', 'F160W', 'F182M', 'F210M', 'F430M', 'F460M', 'F480M', 'F444W']
+    global cc
     cc = True
     if cc:
         fig_fits_path = fig_path / 'colour_colour_fits/'
