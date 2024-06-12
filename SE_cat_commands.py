@@ -7,12 +7,13 @@ Created on 16-11-23
 Generates strings of sextractor commands to run on the command line to generate catalogs for FRESCO
 """
 import os
-os.chdir('/Users/sam/FRESCO')
+from paths_and_global_vars import *
+os.chdir(f_path)
 
 # Open files with image names, weight names and catalog names:
-measurement_file = 'gds-sci-filenames.txt'
-weight_file = 'gds-wht-filenames.txt'
-catalog_file = 'catalog-names.txt'
+measurement_file = f'names / {cat_name}-sci-filenames.txt'
+weight_file = f'names / {cat_name}-wht-filenames.txt'
+catalog_file = 'names / catalog-names.txt'
 
 # Read files and split into lists:
 with open(measurement_file, 'r') as measurement_file:

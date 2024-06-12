@@ -135,7 +135,7 @@ def plot_source_color_and_save_cuts(slope):
     Args:
         slope (float): The slope of the linear fit to the z=6 points
     """
-    cat_SE = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog_filtered.cat', delimiter=' ', names=True, comments='#')
+    cat_SE = np.genfromtxt(f_path / cat_folder / f'{cat_name}_filtered.cat', delimiter=' ', names=True, comments='#')
     F_x_F_xy_F_y = []
     for f_name in [f_names[1], f_names[0], f_names[2]]:
         filter_list = [filter_name[1:].lower() for filter_name in filter_dict.keys()] # get the filter names without the 'F'
@@ -154,7 +154,7 @@ def plot_source_color_and_save_cuts(slope):
     # Write new catalog with selected sources
     header = ' '.join(cat_SE.dtype.names)
     selected_catalog = cat_SE[sel]
-    np.savetxt(f_path / cat_folder / f'{cat_name}_catalog_colourcut_sel.cat', selected_catalog, header=header, comments='#', fmt='%s')
+    np.savetxt(f_path / cat_folder / f'{cat_name}_colour_sel.cat', selected_catalog, header=header, comments='#', fmt='%s')
 
 def colour_colour_plot():
     """

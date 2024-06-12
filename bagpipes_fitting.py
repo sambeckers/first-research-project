@@ -17,7 +17,7 @@ def load_phot(ID):
     """ Load  photometry from catalogue."""
 
     # load up the relevant columns from the catalogue.
-    cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog_colourcut_sel_formatted_vi.cat', delimiter=' ', names=True, comments='#')
+    cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_colourcut_sel_formatted_vi.cat', delimiter=' ', names=True, comments='#')
     
     # get the names of the flux and error columns.
     f_header, e_header = [], []
@@ -45,7 +45,7 @@ def load_phot(ID):
 
 # print(load_goodss("141.0"))
 
-filters= np.loadtxt(f_path / f'{cat_name}_filter_paths.txt', dtype="str") # Load filter paths
+filters= np.loadtxt(f_path / f'names/{cat_name}_filter_paths.txt', dtype="str") # Load filter paths
 # print(filters)
 
 galaxy = pipes.galaxy("402", load_phot, spectrum_exists=False, filt_list=filters)

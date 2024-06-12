@@ -51,8 +51,8 @@ def open_cats(cat_file):
     id = zout[1].data['id']
     nusefilt = zout[1].data['nusefilt']
 
-    filenames = open(f_path / 'gds-sci-filenames_ordered_incl_f444w.txt', 'r').read().splitlines()
-    images = [fits.open(f_path / f)[0] for f in filenames] # save hdul for each image
+    filenames = open(f_path / f'names/{cat_name}-sci-filenames_ordered_incl_f444w.txt', 'r').read().splitlines()
+    images = [fits.open(f_path / reprojected / f)[0] for f in filenames] # save hdul for each image
     
     return self, cat, id, nusefilt, images
 
@@ -137,14 +137,14 @@ def show_cat_fits(self, cat, id, nusefilt, images, f_names):
     pd.DataFrame({'ID (z>6)':id_z_6}).to_csv(fig_fits_path / 'id_z_6.cat', index=False)
 
 def main():
-    global cc
+    global cc, fig_fits_path
     cc = True
     if cc:
         fig_fits_path = fig_path / 'colour_colour_fits/'
-        show_cat_fits(*open_cats(f'{cat_name}_catalog_colourcut_sel_formatted.cat'), f_names)
+        show_cat_fits(*open_cats(f'{cat_name}_colour_sel_formatted.cat'), f_names)
     else:
         fig_fits_path = fig_path / 'eazy_fits/'
-        show_cat_fits(*open_cats(f'{cat_name}_zphot_catalog_filtered.cat'), f_names)
+        show_cat_fits(*open_cats(f'{cat_name}_zphot_filtered.cat'), f_names)
 
 if __name__ == '__main__':
     main()

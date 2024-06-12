@@ -73,7 +73,7 @@ def full_gds_catalog():
         for filter_name in filters:
             header.append(f'{param}_{filter_name}') # Add the parameter and filter to the header
 
-    with open(f'{cat_name}_catalog.cat', 'w') as catalog_file:
+    with open(f'{cat_name}.cat', 'w') as catalog_file:
         catalog_file.write(' '.join(header) + '\n')
         for source_idx in range(len(ID)): # Loop over the sources
             output_row = [ID[source_idx]]  # Start each row with the source ID
@@ -99,7 +99,7 @@ def class_star_flags_nondetect_selection():
     - Replace flux with -100.0 if flux and error are both zero (non-detection), s.t. EAZY will not observe it
     """
     try: 
-        cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog.cat', delimiter=' ', names=True, comments='#')
+        cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}.cat', delimiter=' ', names=True, comments='#')
 
         sel = (cat['CLASS_STAR_444w'] < 0.8) & (cat['FLAGS_444w'] <= 7) & (cat['f_444w']/cat['e_444w'] >= 5)
         cat_filter = cat[sel]
@@ -113,10 +113,10 @@ def class_star_flags_nondetect_selection():
                 
         # Write the filtered catalog to a new file
         header = ' '.join(cat.dtype.names)
-        np.savetxt(f_path / cat_folder / f'{cat_name}_catalog_filtered.cat', cat_filter, header=header, comments='#', fmt='%s')
+        np.savetxt(f_path / cat_folder / f'{cat_name}_filtered.cat', cat_filter, header=header, comments='#', fmt='%s')
         print(f'Filtered catalog (class_star, flags, SNR, non-detections) saved.\nOriginal catalog: {len(cat)} sources \nFiltered catalog: {len(cat_filter)} sources, {len(cat) - len(cat_filter)} sources removed\n')
     except FileNotFoundError:
-        print(f'{cat_name}_catalog.cat not found. Run full_gds_catalog() first.')
+        print(f'{cat_name}.cat not found. Run full_gds_catalog() first.')
 
 def photoz_catalog():
     """
@@ -127,7 +127,7 @@ def photoz_catalog():
         _, filters = get_cat_name_filter_numbers()
 
         # Read in the catalog including headers
-        cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog_filtered.cat', delimiter=' ', names=True, comments='#')
+        cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_filtered.cat', delimiter=' ', names=True, comments='#')
 
         # Read in the eazy zout catalog FITS
         zout = fits.open(f_path / eazy_folder / f'{cat_name}_photoz.eazypy.zout.fits')
@@ -162,11 +162,11 @@ def photoz_catalog():
         })
 
         # Save DataFrame to a new .cat file
-        df.to_csv(f_path / cat_folder / f'{cat_name}_zphot_catalog.cat', sep=' ', index=False)
+        df.to_csv(f_path / cat_folder / f'{cat_name}_zphot.cat', sep=' ', index=False)
         print('Photometric redshift catalog saved\n')
         zout.close()
     except FileNotFoundError:
-        print(f'{cat_name}_catalog_filtered.cat not found. Run class_star_flags_selection() first.')
+        print(f'{cat_name}_filtered.cat not found. Run class_star_flags_selection() first.')
 
 def z_bin_selection(strictness):
     """
@@ -177,12 +177,12 @@ def z_bin_selection(strictness):
         strictness (float): The strictness of the z_phot bin width (e.g. 0.006)
     """
     try: 
-        cat_zphot = np.genfromtxt(f_path / cat_folder / f'{cat_name}_zphot_catalog.cat', delimiter=' ', names=True, comments='#')
+        cat_zphot = np.genfromtxt(f_path / cat_folder / f'{cat_name}_zphot.cat', delimiter=' ', names=True, comments='#')
         #(z97 - z02)/(1+z50)/2
         sel2 = (cat_zphot['z_975'] - cat_zphot['z_025'])/(1 + cat_zphot['z_500'])/2 < strictness
         cat_zphot_filter = cat_zphot[sel2]
         header = ' '.join(cat_zphot.dtype.names)
-        np.savetxt(f_path / cat_folder / f'{cat_name}_zphot_catalog_filtered.cat', cat_zphot_filter, header=header, comments='#', fmt='%s')
+        np.savetxt(f_path / cat_folder / f'{cat_name}_zphot_filtered.cat', cat_zphot_filter, header=header, comments='#', fmt='%s')
         print(f'Filtered z_phot catalog saved.\nOriginal catalog: {len(cat_zphot)} sources \nFiltered catalog: {len(cat_zphot_filter)} sources, {len(cat_zphot) - len(cat_zphot_filter)} sources removed\n')
 
         # Plot the number of sources remaining as a function of the strictness
@@ -201,14 +201,14 @@ def z_bin_selection(strictness):
         plt.savefig(fig_path / 'z_bin_selection.pdf', bbox_inches='tight')
         plt.show()
     except FileNotFoundError:
-        print(f'{cat_name}_zphot_catalog.cat not found. Run photoz_gds_catalog() first.')
+        print(f'{cat_name}_zphot.cat not found. Run photoz_gds_catalog() first.')
 
 def z_phot_hist():
     """
     Plot a histogram of the z_phot values.
     """
     try:
-        cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_zphot_catalog_filtered.cat', delimiter=' ', names=True, comments='#')
+        cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_zphot_filtered.cat', delimiter=' ', names=True, comments='#')
         z_phot = cat['z_phot']
 
         plt.figure(dpi=450)
@@ -218,11 +218,11 @@ def z_phot_hist():
         plt.savefig(fig_path / 'z_phot_hist.pdf', bbox_inches='tight')
         plt.show()
     except FileNotFoundError:
-        print(f'{cat_name}_zphot_catalog_filtered.cat not found. Run z_bin_selection() first.')
+        print(f'{cat_name}_zphot_filtered.cat not found. Run z_bin_selection() first.')
 
 def format_cc_sel_catalog():
     try:
-        cat_cc = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog_colourcut_sel.cat', delimiter=' ', names=True, comments='#')
+        cat_cc = np.genfromtxt(f_path / cat_folder / f'{cat_name}_colour_sel.cat', delimiter=' ', names=True, comments='#')
         _, filters = get_cat_name_filter_numbers()
         flux = [[] for _ in range(len(filters))]
         flux_err = [[] for _ in range(len(filters))]
@@ -239,14 +239,14 @@ def format_cc_sel_catalog():
             **{f'e_{filter}': flux_err[idx] for idx, filter in enumerate(filters)},
             **{f'MAG_APER_{filter}': mag_aper[idx] for idx, filter in enumerate(filters)}
         })
-        df.to_csv(f_path / cat_folder / f'{cat_name}_catalog_colourcut_sel_formatted.cat', sep=' ', index=False)
+        df.to_csv(f_path / cat_folder / f'{cat_name}_colourcut_sel_formatted.cat', sep=' ', index=False)
         print('Formatted colour-cut selection catalog saved\n')
     except FileNotFoundError:
         print(f'{cat_name}_catalog_colourcut_sel.cat not found. Run colour_colour_cuts_v2.py first.')
 
 def final_catalog():
     try:
-        cat_cc = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog_colourcut_sel.cat', delimiter=' ', names=True, comments='#')
+        cat_cc = np.genfromtxt(f_path / cat_folder / f'{cat_name}_colour_sel.cat', delimiter=' ', names=True, comments='#')
         cat_zphot = np.genfromtxt(f_path / cat_folder / f'{cat_name}_photoz_final_v2.cat', delimiter=' ', names=True, comments='#')
         print(len(cat_zphot['ID']))
 
@@ -259,7 +259,7 @@ def final_catalog():
         print(f'Count: {count}')
         
     except FileNotFoundError:
-        print(f'{cat_name}_catalog_colourcut_sel.cat or {cat_name}_zphot_catalog_final.cat not found. Run colour_colour_cuts_v2.py or photoz_gds.ipynb first.')
+        print(f'{cat_name}_colour_sel.cat or {cat_name}_zphot_catalog_final.cat not found. Run colour_colour_cuts_v2.py or photoz_gds.ipynb first.')
 
 def cat_from_IDs():
     IDs = [141.0, 207.0,  340.0, 402.0, 743.0, 747.0, 789.0, 799.0, 1574.0, 1814.0, 1838.0, 2039.0, 2403.0, 
@@ -273,7 +273,7 @@ def cat_from_IDs():
            16081.0, 16366.0, 16419.0, 16435.0, 16622.0, 16661.0, 16686.0, 16733.0, 16751.0, 16897.0, 17096.0,
            17250.0, 17279.0, 17873.0, 18105.0, 18146.0, 18741.0, 18806.0, 18907.0, 18911.0, 19101.0, 19691.0, 
            19742.0, 19844.0, 20426.0, 20656.0, 20789.0, 20947.0, 20970.0, 21499.0, 21692.0, 21724.0, 21926.0]
-    cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_catalog_colourcut_sel_formatted.cat', delimiter=' ', names=True, comments='#')
+    cat = np.genfromtxt(f_path / cat_folder / f'{cat_name}_colour_sel_formatted.cat', delimiter=' ', names=True, comments='#')
     sel = np.isin(cat['ID'], IDs) # Match the IDs in the catalog with the IDs in the list
     for idx, i in enumerate(np.isin(IDs, cat['ID'][sel])):
         if not i:
@@ -288,7 +288,7 @@ def cat_from_IDs():
     z_phot = zout[1].data['z_phot']
     df.insert(1, 'z_phot', z_phot[sel2].byteswap().newbyteorder()) # Insert z_phot column at 1st index. byteswap and newbyteorder to fix endianness
 
-    df.to_csv(f_path / cat_folder / f'{cat_name}_catalog_colourcut_sel_formatted_vi.cat', sep=' ', index=False)
+    df.to_csv(f_path / cat_folder / f'{cat_name}_colour_sel_formatted_vi.cat', sep=' ', index=False)
 
     def plot_merger(IDs, name):
         """
@@ -308,12 +308,12 @@ def cat_from_IDs():
 
     plot_merger(IDs, 'colour_cut_sel_fits_vi')
 
-    id_z_6 = pd.read_csv(fig_path/ 'colour_colour_fits/id_z_6.cat')
+    id_z_6 = pd.read_csv(fig_path/'colour_colour_fits/id_z_6.cat')
     sel3 = np.isin(id_z_6['ID (z>6)'], IDs)
-    plot_merger(id_z_6['ID (z>6)'][~sel3], 'colour_cut_sel_vi_rejected')
+    plot_merger(id_z_6['ID (z>6)'][~sel3], 'colour_sel_vi_rejected')
     plot_merger([340.0, 743.0, 747.0, 789.0, 799.0, 1574.0, 1814.0, 2610.0, 3019.0, 3363.0, 3516.0, 3685.0, 
                 3772.0, 5378.0, 7037.0, 7914.0, 8556.0, 8665.0, 9328.0, 11286.0, 11895.0, 14430.0, 14529.0,
-                15367.0, 16686.0, 16751.0, 16897.0, 18146.0, 21724.0, 21926.0], 'colour_cut_sel_vi_candidates')
+                15367.0, 16686.0, 16751.0, 16897.0, 18146.0, 21724.0, 21926.0], 'colour_sel_vi_candidates')
     
 
 def main():

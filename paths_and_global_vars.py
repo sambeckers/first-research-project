@@ -10,14 +10,19 @@ from pathlib import Path
 # File handling
 f_path = Path('/Users/sam/FRESCO/') # Path to the FRESCO directory
 fig_path = Path('/Users/sam/Documents/GitHub/FRP/Figures/')
-cat_folder = 'Catalogs_v2'
+images = 'gds_FRESCO_JADES'
+reprojected = 'reprojected'
+eazy_path = Path('/Users/sam/eazy-photoz/')
+cat_folder = 'catalogs_v2'
 eazy_folder = 'eazy outputs'
-cat_filter_names = 'catalog-names_incl_f444w.txt'
+cat_filter_names = 'names/catalog-names_incl_f444w.txt'
 cat_name = 'gds'
 
 # Filters
 f_names = ['F336WU', 'F435W', 'F475W', 'F606W', 'F606WU', 'F775W', 'F814W', 'F814WU', 'F850LP', 'F850LPU', 
            'F105W', 'F110W', 'F125W', 'F140W', 'F160W', 'F182M', 'F210M', 'F430M', 'F460M', 'F480M', 'F444W']
+nircam_names = ['F090W', 'F115W', 'F150W', 'F182M', 'F200W', 'F210M', 'F277W', 'F335M', 'F356W', 'F410M', 'F430M', 'F460M', 'F480M', 'F444W']
+
 filter_dict = {'F336WU': 'HST_WFC3_UVIS1.F336W.dat',
                 'F435W': 'HST_ACS_WFC.F435W.dat',
                 'F475W': 'HST_ACS_WFC.F475W.dat',
