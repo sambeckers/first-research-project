@@ -22,7 +22,8 @@ cat_name = 'gds'
 # f_names = ['F336WU', 'F435W', 'F475W', 'F606W', 'F606WU', 'F775W', 'F814W', 'F814WU', 'F850LP', 'F850LPU', 
 #            'F105W', 'F110W', 'F125W', 'F140W', 'F160W', 'F182M', 'F210M', 'F430M', 'F460M', 'F480M', 'F444W']
 f_names = ['F336WU', 'F435W', 'F475W', 'F606W', 'F606WU', 'F775W', 'F814W', 'F814WU', 'F850LP', 'F850LPU',
-           'F090W', 'F115W', 'F150W', 'F182M', 'F200W', 'F210M', 'F277W', 'F335M', 'F356W', 'F410M', 'F430M', 'F460M', 'F480M', 'F444W']
+           'F090W', 'F105W', 'F110W', 'F115W', 'F125W', 'F150W', 'F182M', 'F200W', 'F210M', 'F277W', 'F335M', 
+           'F356W', 'F410M', 'F430M', 'F460M', 'F480M', 'F444W']
 nircam_names = ['F090W', 'F115W', 'F150W', 'F182M', 'F200W', 'F210M', 'F277W', 'F335M', 'F356W', 'F410M', 'F430M', 'F460M', 'F480M', 'F444W']
 
 filter_dict = {'F336WU': 'HST_WFC3_UVIS1.F336W.dat',

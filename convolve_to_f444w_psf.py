@@ -28,16 +28,17 @@ def fix_header(file_name):
 def verify_and_fix_hdu(file_name):
     try:
         with fits.open(file_name, mode='update', ignore_missing_end=True) as hdul:
-            for hdu in hdul:
-                try:
-                    hdu.verify('fix')
-                except Exception as e:
-                    print(f"Error verifying HDU {hdu.name} in {file_name}: {e}")
+            # for hdu in hdul:
+            #     try:
+            #         hdu.verify('fix')
+            #     except Exception as e:
+            #         print(f"Error verifying HDU {hdu.name} in {file_name}: {e}")
             hdr = hdul[0].header
-            hdr.apppend(('END', 'End of header'), end=True)
+            hdr.apppend(('END', 'End of header'), end=True, verify=False)
             hdul.flush()
     except Exception as e:
         print(f"Failed to verify and fix {file_name}: {e}")
+        
 def rewrite_fits(file_name):
     try:
         with fits.open(file_name, ignore_missing_end=True) as hdul:
@@ -46,6 +47,6 @@ def rewrite_fits(file_name):
         print(f"Failed to rewrite1 {file_name}: {e}")
 
 
-fix_header(f_path / 'psf' / 'F814WU_PSF.fits')
+verify_and_fix_hdu(f_path / 'psf' / 'F814WU_PSF.fits')
 # fix_header(f_path / 'psf' / 'F200W_PSF.fits')
 # fix_header(f_path / 'psf' / 'F444W_PSF.fits')
