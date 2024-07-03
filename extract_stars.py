@@ -5,7 +5,10 @@ from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord, ICRS
 from astropy.nddata import Cutout2D
 from astropy.nddata.utils import NoOverlapError
-from astropy.stats import sigma_clip
+from astropy.stats import SigmaClip
+from photutils.psf import EPSFBuilder, EPSFStars, EPSFStar
+import matplotlib.pyplot as plt
+from astropy.visualization import simple_norm
 import matplotlib.pyplot as plt
 import numpy as np
 import textwrap
@@ -36,12 +39,13 @@ def stars_from_f444w_SE():
     print(f'Number of stars: {len(cat)} using class_star >= {star}')
     return len(cat), cat['ra'], cat['dec'], cat['id']
 
-def star_cutouts(cat_length, RA, DEC, ID, simbad=False) -> None:
+def star_cutouts(cat_length, RA, DEC, ID, simbad=False, plot=True):
     filenames = open(f_path / f'names/{cat_name}_sci_filenames.txt', 'r').read().splitlines()
     
     # Filter filenames to only include HST filters and JWST F444W
     filtered_filenames = [f for f in filenames if '5.0' in f or '444w' in f]
     filter_names = [f.split('-')[3].split('_')[0].upper() for f in filtered_filenames] # Extract filter names from filenames
+
     # Load the images
     imgs = [fits.open(f_path / images / f)[0] for f in filtered_filenames]  # save HDUList for each image
 
@@ -49,47 +53,89 @@ def star_cutouts(cat_length, RA, DEC, ID, simbad=False) -> None:
     num_images = len(imgs) # Number of images
     num_cutouts = cat_length # Number of cutouts
     nrows, ncols = num_cutouts, num_images # Calculate the grid size for subplots (rows = num_cutouts, columns = num_images)
-    fig, axs = plt.subplots(nrows, ncols, figsize=(2 * ncols, 2 * nrows), dpi=450)
+    if plot:
+        fig, axs = plt.subplots(nrows, ncols, figsize=(2 * ncols, 2 * nrows), dpi=450)
 
+    EPSF_stars_per_filter = [[] for _ in range(num_images)] # List to store EPSF stars
     # Generate cutouts and plot them
     for i, (ra, dec, obj_id) in tqdm(enumerate(zip(RA, DEC, ID)), total=cat_length):
         for j, img in enumerate(imgs):
             try:
                 if simbad:
-                    cutout = Cutout2D(img.data, SkyCoord(ra, dec, unit=(u.hourangle, u.degree)), u.Quantity((7, 7), u.arcsec), wcs=WCS(img.header))
+                    cutout = Cutout2D(img.data, SkyCoord(ra, dec, unit=(u.hourangle, u.degree)), u.Quantity((4, 4), u.arcsec), wcs=WCS(img.header))
                 else:
                     cutout = Cutout2D(img.data, SkyCoord(ra, dec, unit=(u.deg, u.deg)), u.Quantity((7, 7), u.arcsec), wcs=WCS(img.header))
             except NoOverlapError:
                 print(f'No overlap for {obj_id} in {filter_names[j]}')
                 continue
 
-            # Determine the axis to plot on
-            ax = axs[i, j]
+            # Add EPSF star
+            star = EPSFStar(cutout.data, 
+                            cutout_center=cutout.center_cutout, origin = cutout.origin_original, 
+                            wcs_large=WCS(img.header), id_label=obj_id)
+            if star.flux >= 0.0:
+                EPSF_stars_per_filter[j].append(star)
 
-            # Plot the cutout
-            ax.imshow(cutout.data, origin='lower', cmap='plasma', vmin=0, vmax=1)
-            ax.tick_params(left=False, right=False, top=False, bottom=False, labelleft=(j==0), labelbottom=False)
-            
-            # Set the side header with the catalog id
-            if j == 0:
-                wrapped_id = "\n".join(textwrap.wrap(str(obj_id), width=10)) # Wrap the id to fit the plot
-                ax.set_ylabel(wrapped_id, fontsize=20, rotation=0, labelpad=70, va='center')
-                ax.set_yticks([]) # Remove y-ticks
+            if plot:
+                # Determine the axis to plot on
+                ax = axs[i, j]
 
-            # Set the top header with the filter name
-            if i == 0:
-                ax.set_title(filter_names[j], fontsize=30)
+                # Plot the cutout
+                # ax.imshow(cutout.data, origin='lower', cmap='plasma', vmin=-1*np.std(cutout.data), vmax=3*np.std(cutout.data))
+                ax.imshow(cutout.data, origin='lower', cmap='plasma', vmin=0, vmax=1)
+                ax.tick_params(left=False, right=False, top=False, bottom=False, labelleft=(j==0), labelbottom=False)
+                
+                # Set the side header with the catalog id
+                if j == 0:
+                    wrapped_id = "\n".join(textwrap.wrap(str(obj_id), width=10)) # Wrap the id to fit the plot # add str(i) + "|" + if you want to see the index
+                    ax.set_ylabel(wrapped_id, fontsize=20, rotation=0, labelpad=70, va='center')
+                    ax.set_yticks([]) # Remove y-ticks
 
-    # Adjust layout to ensure space for labels
-    plt.subplots_adjust(wspace=0.05, hspace=0.05)
-    plt.savefig(fig_path / f'{cat_name}_psf_star_cutouts_from_444w_SE.png', bbox_inches='tight')
-    plt.show()
+                # Set the top header with the filter name
+                if i == 0:
+                    ax.set_title(filter_names[j], fontsize=30)
+        
+    if plot: 
+        # Adjust layout to ensure space for labels
+        plt.subplots_adjust(wspace=0.05, hspace=0.05)
+        plt.savefig(fig_path / f'{cat_name}_psf_star_cutouts_selected.png', bbox_inches='tight')
+        plt.show()
+
+    return EPSF_stars_per_filter, filter_names
+
+def build_psf(stars_per_filter, filter_names):
+    epsf_builder = EPSFBuilder(oversampling=1, norm_radius=10, sigma_clip=SigmaClip(sigma=5.0, maxiters=10), smoothing_kernel='quadratic', maxiters=50, progress_bar=True)
+    for s_list, f in zip(stars_per_filter, filter_names):
+        stars = EPSFStars(s_list)
+        epsf, fitted_stars = epsf_builder.build_epsf(stars)
+        norm = simple_norm(epsf.data, 'log', percent=99.0)
+        plt.imshow(epsf.data, origin='lower', cmap='plasma', norm=norm)
+        plt.colorbar()
+        plt.title(f'{f} PSF')
+        plt.show()
+
+
+    # stars = EPSFStars(stars_per_filter[-2])
+    # epsf, fitted_stars = epsf_builder.build_epsf(stars)
+
+    # norm = simple_norm(epsf.data, 'log', percent=99.0)
+    # plt.imshow(epsf.data, origin='lower', cmap='plasma', norm=norm)
+    # plt.colorbar()
+    # plt.show()
+
 
 def main():
+    excluded_sources = [3, 11, 13, 16, 17, 21, 24, 27, 28, 29, 31, 32, 33, 34, 35, 36, 39, 42, 43, 46, 47] # index of sources to exclude
+
     # Load the SIMBAD catalog
-    cat_sim = np.genfromtxt(f_path / cat_folder / 'FRESCO_simbad_stars.txt', delimiter='\t', names=True, dtype=None, encoding='utf-8')
-    # star_cutouts(len(cat_sim), cat_sim['ra'], cat_sim['dec'], cat_sim['identifier'], sibmad=True)
-    stars_from_f444w_SE()
+    cat = np.genfromtxt(f_path / cat_folder / 'FRESCO_simbad_stars.txt', delimiter='\t', names=True, dtype=None, encoding='utf-8')
+    cat_sim = np.delete(cat, excluded_sources) # Remove the excluded sources
+    
+    spf, filters = star_cutouts(len(cat_sim), cat_sim['ra'], cat_sim['dec'], cat_sim['identifier'], simbad=True, plot=False)
+    build_psf(spf, filters)
+
+    # Load the SE catalog
+    # stars_from_f444w_SE()
     # star_cutouts(*stars_from_f444w_SE())
 
 if __name__ == '__main__':
