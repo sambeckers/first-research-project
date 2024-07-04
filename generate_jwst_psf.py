@@ -22,7 +22,7 @@ from paths_and_global_vars import *
 def generate_jwst_psf(nircam_filter:str, plot=False) -> None:
     nc = NIRCam()
     nc.filter = nircam_filter
-    psf = nc.calc_psf(outfile=str(f_path / f'psf/{nircam_filter}_PSF.fits'))
+    psf = nc.calc_psf(outfile=str(f_path / f'psf/{nircam_filter}_PSF.fits'), overwrite=True)
     if plot:
         display_psf(psf, ext=1, title=f'{nircam_filter} PSF (Simulated)')
         plt.savefig(fig_path / f'psf/{nircam_filter}_psf.pdf', dpi=450)
