@@ -41,6 +41,20 @@ def stars_from_f444w_SE():
     return len(cat), cat['ra'], cat['dec'], cat['id']
 
 def star_cutouts(cat_length, RA, DEC, ID, simbad=False, plot=True):
+    """Generate cutouts of stars from the a star catalog.
+
+    Args:
+        cat_length (int): Number of stars in the catalog
+        RA (array): Right ascension of the stars in the catalog
+        DEC (array): Declination of the stars in the catalog
+        ID (array): ID of the stars in the catalog
+        simbad (bool, optional): Whether the catalog is from SIMBAD. Defaults to False.
+        plot (bool, optional): Whether to plot the cutouts. Defaults to True.
+
+    Returns:
+        EPSF_stars_per_filter (list): nested list of EPSF stars for each filter
+        filter_names (list): List of filter names
+    """
     filenames = open(f_path / f'names/{cat_name}_sci_filenames.txt', 'r').read().splitlines()
     
     # Filter filenames to only include HST filters and JWST F444W
@@ -58,12 +72,13 @@ def star_cutouts(cat_length, RA, DEC, ID, simbad=False, plot=True):
         fig, axs = plt.subplots(nrows, ncols, figsize=(2 * ncols, 2 * nrows), dpi=450)
 
     EPSF_stars_per_filter = [[] for _ in range(num_images)] # List to store EPSF stars
+    print(f'Generating cutouts for {cat_length} stars...')
     # Generate cutouts and plot them
     for i, (ra, dec, obj_id) in tqdm(enumerate(zip(RA, DEC, ID)), total=cat_length):
         for j, img in enumerate(imgs):
             try:
                 if simbad:
-                    cutout = Cutout2D(img.data, SkyCoord(ra, dec, unit=(u.hourangle, u.degree)), u.Quantity((4, 4), u.arcsec), wcs=WCS(img.header))
+                    cutout = Cutout2D(img.data, SkyCoord(ra, dec, unit=(u.hourangle, u.degree)), u.Quantity((4, 4), u.arcsec), wcs=WCS(img.header)) # important! use hourangle for ra
                 else:
                     cutout = Cutout2D(img.data, SkyCoord(ra, dec, unit=(u.deg, u.deg)), u.Quantity((7, 7), u.arcsec), wcs=WCS(img.header))
             except NoOverlapError:
@@ -74,7 +89,7 @@ def star_cutouts(cat_length, RA, DEC, ID, simbad=False, plot=True):
             star = EPSFStar(cutout.data, 
                             cutout_center=cutout.center_cutout, origin = cutout.origin_original, 
                             wcs_large=WCS(img.header), id_label=obj_id)
-            if star.flux >= 0.0:
+            if star.flux >= 0.0: # Only add stars with positive flux to EPSFStars list 
                 EPSF_stars_per_filter[j].append(star)
 
             if plot:
@@ -104,21 +119,59 @@ def star_cutouts(cat_length, RA, DEC, ID, simbad=False, plot=True):
 
     return EPSF_stars_per_filter, filter_names
 
+def pad_to_even_shape(data):
+    """Pad the data to have an even shape.
+
+    Args:
+        data (array): Data to pad
+
+    Returns:
+        array: Padded data
+    """
+    padded_data = data
+    if data.shape[0] % 2 != 0:
+        # Pad with one row of zeros at the bottom
+        padded_data = np.pad(padded_data, ((0, 1), (0, 0)), mode='constant')
+    if data.shape[1] % 2 != 0:
+        # Pad with one column of zeros at the right
+        padded_data = np.pad(padded_data, ((0, 0), (0, 1)), mode='constant')
+    return padded_data
+
 def custom_format(x, pos):
+    """Custom format for colorbar tickers. 
+    Scientific notation for values less than 1e-2 and greater than 1e4.
+
+    Args:
+        x (str): colorbar tickers
+
+    Returns:
+        str: formatted colorbar tickers
+    """
     if x != 0 and (abs(x) < 1e-2 or abs(x) >= 1e4):
         return f'{x:.1e}'
     else:
         return f'{x:.1f}'
-    
 
-def build_psf(stars_per_filter, filter_names):
+def build_psf(stars_per_filter, filter_names) -> None:
+    """Build the Effective Point Spread Function (EPSF) for each filter.
+
+    Args:
+        stars_per_filter (list): nested list of EPSF stars for each filter
+        filter_names (list): list of filter names
+    """
+    # Initialize the EPSFBuilder w/ custom settings
     epsf_builder = EPSFBuilder(oversampling=1, norm_radius=10, sigma_clip=SigmaClip(sigma=5.0, maxiters=10), smoothing_kernel='quadratic', maxiters=50, progress_bar=True)
+
+    # Build the EPSF for each filter
     for s_list, f in zip(stars_per_filter, filter_names):
-        stars = EPSFStars(s_list)
-        epsf, fitted_stars = epsf_builder.build_epsf(stars)
-        if s_list != stars_per_filter[-1]:
-            hdu = fits.PrimaryHDU(data=epsf.data)
+        stars = EPSFStars(s_list) # Create EPSFStars object
+        epsf, fitted_stars = epsf_builder.build_epsf(stars) # Build the EPSF
+        epsf_padded  = pad_to_even_shape(epsf.data) # Pad the EPSF to have an even shape (required by pypher)
+        if s_list != stars_per_filter[-1]: # Save the EPSF to a fits file for all filters except F444W (already made it's PSF with webbpsf)
+            hdu = fits.PrimaryHDU(data=epsf_padded.data)
             hdu.writeto(f_path / 'psf' / f'{f}_PSF.fits', overwrite=True)
+
+        # Plot the EPSF (using photutils example code)
         norm = simple_norm(epsf.data, 'log', percent=99.0)
         plt.figure(dpi=450)
         plt.imshow(epsf.data, origin='lower', cmap='plasma', norm=norm)
@@ -127,7 +180,7 @@ def build_psf(stars_per_filter, filter_names):
         plt.savefig(fig_path / f'{f}_epsf.png', bbox_inches='tight')
         plt.show()
 
-
+    # Example for one filter:
     # stars = EPSFStars(stars_per_filter[-2])
     # epsf, fitted_stars = epsf_builder.build_epsf(stars)
 
@@ -135,7 +188,6 @@ def build_psf(stars_per_filter, filter_names):
     # plt.imshow(epsf.data, origin='lower', cmap='plasma', norm=norm)
     # plt.colorbar()
     # plt.show()
-
 
 def main():
     excluded_sources = [3, 11, 13, 16, 17, 21, 24, 27, 28, 29, 31, 32, 33, 34, 35, 36, 39, 42, 43, 46, 47] # index of sources to exclude
