@@ -96,7 +96,7 @@ def star_cutouts(cat_length, RA, DEC, ID, simbad=False, plot=True, HST_only=Fals
             star = EPSFStar(cutout.data, 
                             cutout_center=cutout.center_cutout, origin = cutout.origin_original, 
                             wcs_large=WCS(img.header), id_label=obj_id)
-            if star.flux >= 0.0: # Only add stars with positive flux to EPSFStars list 
+            if star.flux >= 0.0 and np.all(np.isfinite(star._data_values)): # Only add stars with positive flux to EPSFStars list 
                 EPSF_stars_per_filter[j].append(star)
 
             if plot:
@@ -177,6 +177,7 @@ def build_psf(stars_per_filter, filter_names) -> None:
         if s_list != stars_per_filter[-1]: # Save the EPSF to a fits file for all filters except F444W (already made it's PSF with webbpsf)
             hdu = fits.PrimaryHDU(data=epsf_padded.data)
             hdu.writeto(f_path / 'psf' / f'{f}_PSF.fits', overwrite=True)
+            print(f'Saved {f} PSF to fits file')
 
         # Plot the EPSF (using photutils example code)
         norm = simple_norm(epsf.data, 'log', percent=99.0)
@@ -203,7 +204,7 @@ def main():
     # cat = np.genfromtxt(f_path / cat_folder / 'FRESCO_simbad_stars.txt', delimiter='\t', names=True, dtype=None, encoding='utf-8')
     # cat_sim = np.delete(cat, excluded_sources) # Remove the excluded sources
     
-    # spf, filters = star_cutouts(len(cat_sim), cat_sim['ra'], cat_sim['dec'], cat_sim['identifier'], simbad=True, plot=False, HST_only=True)
+    # spf, filters = star_cutouts(len(cat_sim), cat_sim['ra'], cat_sim['dec'], cat_sim['identifier'], simbad=True, plot=False, JWST_only=True)
     # build_psf(spf, filters)
 
     # Load the SE catalog
@@ -212,7 +213,7 @@ def main():
 
     # Andrea's v7 star catalog
     cat_v7 = np.genfromtxt(f_path / cat_folder / f'{cat_name}_imgv7.0_stars.cat', names=True, dtype=None, encoding='utf-8')
-    spf, filters = star_cutouts(len(cat_v7), cat_v7['ra'], cat_v7['dec'], cat_v7['id'], simbad=False, plot=False, HST_only=True)
+    spf, filters = star_cutouts(len(cat_v7), cat_v7['ra'], cat_v7['dec'], cat_v7['id'], simbad=False, plot=False, JWST_only=True)
     build_psf(spf, filters)
 
 if __name__ == '__main__':
