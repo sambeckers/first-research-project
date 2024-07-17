@@ -29,3 +29,4 @@ def generate_jwst_psf(nircam_filter:str, plot=False) -> None:
 
 for f in tqdm(nircam_names, total=len(nircam_names)):
     generate_jwst_psf(f, True)
+

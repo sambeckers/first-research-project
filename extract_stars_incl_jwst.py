@@ -40,7 +40,8 @@ def stars_from_f444w_SE():
     print(f'Number of stars: {len(cat)} using class_star >= {star}')
     return len(cat), cat['ra'], cat['dec'], cat['id']
 
-def star_cutouts(cat_length, RA, DEC, ID, simbad=False, plot=True):
+
+def star_cutouts(cat_length, RA, DEC, ID, simbad=False, plot=True, HST_only=False, JWST_only=False):
     """Generate cutouts of stars from the a star catalog.
 
     Args:
@@ -58,11 +59,17 @@ def star_cutouts(cat_length, RA, DEC, ID, simbad=False, plot=True):
     filenames = open(f_path / f'names/{cat_name}_sci_filenames.txt', 'r').read().splitlines()
     
     # Filter filenames to only include HST filters and JWST F444W
-    # filtered_filenames = [f for f in filenames if '5.0' in f or '444w' in f]
-    # filter_names = [f.split('-')[3].split('_')[0].upper() for f in filtered_filenames] # Extract filter names from filenames
+    if HST_only:
+        filtered_filenames = [f for f in filenames if '5.0' in f or '444w' in f]
+    elif JWST_only:
+        filtered_filenames = [f for f in filenames if '5.0' not in f]
+    else:
+        filtered_filenames = filenames
+    
+    filter_names = [f.split('-')[3].split('_')[0].upper() for f in filtered_filenames] # Extract filter names from filenames
 
     # Load the images
-    imgs = [fits.open(f_path / images / f)[0] for f in filenames]  # save HDUList for each image
+    imgs = [fits.open(f_path / images / f)[0] for f in filtered_filenames]  # save HDUList for each image
 
     # Subplot setup
     num_images = len(imgs) # Number of images
@@ -82,7 +89,7 @@ def star_cutouts(cat_length, RA, DEC, ID, simbad=False, plot=True):
                 else:
                     cutout = Cutout2D(img.data, SkyCoord(ra, dec, unit=(u.deg, u.deg)), u.Quantity((7, 7), u.arcsec), wcs=WCS(img.header))
             except NoOverlapError:
-                print(f'No overlap for {obj_id} in {f_names[j]}')
+                print(f'No overlap for {obj_id} in {filter_names[j]}')
                 continue
 
             # Add EPSF star
@@ -109,15 +116,15 @@ def star_cutouts(cat_length, RA, DEC, ID, simbad=False, plot=True):
 
                 # Set the top header with the filter name
                 if i == 0:
-                    ax.set_title(f_names[j], fontsize=30)
+                    ax.set_title(filter_names[j], fontsize=30)
         
     if plot: 
         # Adjust layout to ensure space for labels
         plt.subplots_adjust(wspace=0.05, hspace=0.05)
-        plt.savefig(fig_path / f'{cat_name}_psf_star_cutouts_selected_all_filters.png', bbox_inches='tight')
+        plt.savefig(fig_path / f'{cat_name}_psf_star_cutouts_selected_v7.jpg', bbox_inches='tight')
         plt.show()
 
-    return EPSF_stars_per_filter
+    return EPSF_stars_per_filter, filter_names
 
 def pad_to_even_shape(data):
     """Pad the data to have an even shape.
@@ -152,17 +159,18 @@ def custom_format(x, pos):
     else:
         return f'{x:.1f}'
 
-def build_psf(stars_per_filter) -> None:
+def build_psf(stars_per_filter, filter_names) -> None:
     """Build the Effective Point Spread Function (EPSF) for each filter.
 
     Args:
         stars_per_filter (list): nested list of EPSF stars for each filter
+        filter_names (list): list of filter names
     """
     # Initialize the EPSFBuilder w/ custom settings
     epsf_builder = EPSFBuilder(oversampling=1, norm_radius=10, sigma_clip=SigmaClip(sigma=5.0, maxiters=10), smoothing_kernel='quadratic', maxiters=50, progress_bar=True)
 
     # Build the EPSF for each filter
-    for s_list, f in zip(stars_per_filter, f_names):
+    for s_list, f in zip(stars_per_filter, filter_names):
         stars = EPSFStars(s_list) # Create EPSFStars object
         epsf, fitted_stars = epsf_builder.build_epsf(stars) # Build the EPSF
         epsf_padded  = pad_to_even_shape(epsf.data) # Pad the EPSF to have an even shape (required by pypher)
@@ -195,13 +203,16 @@ def main():
     cat = np.genfromtxt(f_path / cat_folder / 'FRESCO_simbad_stars.txt', delimiter='\t', names=True, dtype=None, encoding='utf-8')
     cat_sim = np.delete(cat, excluded_sources) # Remove the excluded sources
     
-    spf = star_cutouts(len(cat_sim), cat_sim['ra'], cat_sim['dec'], cat_sim['identifier'], simbad=True, plot=True)
-    build_psf(spf)
+    spf, filters = star_cutouts(len(cat_sim), cat_sim['ra'], cat_sim['dec'], cat_sim['identifier'], simbad=True, plot=False, HST_only=True)
+    build_psf(spf, filters)
 
     # Load the SE catalog
     # stars_from_f444w_SE()
     # star_cutouts(*stars_from_f444w_SE())
 
+    # Andrea's v7 star catalog
+    # cat_v7 = np.genfromtxt(f_path / cat_folder / f'{cat_name}_imgv7.0_stars.cat', names=True, dtype=None, encoding='utf-8')
+    # spf, filters = star_cutouts(len(cat_v7), cat_v7['ra'], cat_v7['dec'], cat_v7['id'], simbad=False, plot=True, JWST_only=True)
+
 if __name__ == '__main__':
     main()
-
