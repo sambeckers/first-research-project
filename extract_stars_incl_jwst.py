@@ -87,7 +87,7 @@ def star_cutouts(cat_length, RA, DEC, ID, simbad=False, plot=True, HST_only=Fals
                 if simbad:
                     cutout = Cutout2D(img.data, SkyCoord(ra, dec, unit=(u.hourangle, u.degree)), u.Quantity((4, 4), u.arcsec), wcs=WCS(img.header)) # important! use hourangle for ra
                 else:
-                    cutout = Cutout2D(img.data, SkyCoord(ra, dec, unit=(u.deg, u.deg)), u.Quantity((7, 7), u.arcsec), wcs=WCS(img.header))
+                    cutout = Cutout2D(img.data, SkyCoord(ra, dec, unit=(u.deg, u.deg)), u.Quantity((4.04, 4.04), u.arcsec), wcs=WCS(img.header))
             except NoOverlapError:
                 print(f'No overlap for {obj_id} in {filter_names[j]}')
                 continue
@@ -199,20 +199,21 @@ def build_psf(stars_per_filter, filter_names) -> None:
 def main():
     excluded_sources = [3, 11, 13, 16, 17, 21, 24, 27, 28, 29, 31, 32, 33, 34, 35, 36, 39, 42, 43, 46, 47] # index of sources to exclude
 
-    # Load the SIMBAD catalog
-    cat = np.genfromtxt(f_path / cat_folder / 'FRESCO_simbad_stars.txt', delimiter='\t', names=True, dtype=None, encoding='utf-8')
-    cat_sim = np.delete(cat, excluded_sources) # Remove the excluded sources
+    # # Load the SIMBAD catalog
+    # cat = np.genfromtxt(f_path / cat_folder / 'FRESCO_simbad_stars.txt', delimiter='\t', names=True, dtype=None, encoding='utf-8')
+    # cat_sim = np.delete(cat, excluded_sources) # Remove the excluded sources
     
-    spf, filters = star_cutouts(len(cat_sim), cat_sim['ra'], cat_sim['dec'], cat_sim['identifier'], simbad=True, plot=False, HST_only=True)
-    build_psf(spf, filters)
+    # spf, filters = star_cutouts(len(cat_sim), cat_sim['ra'], cat_sim['dec'], cat_sim['identifier'], simbad=True, plot=False, HST_only=True)
+    # build_psf(spf, filters)
 
     # Load the SE catalog
     # stars_from_f444w_SE()
     # star_cutouts(*stars_from_f444w_SE())
 
     # Andrea's v7 star catalog
-    # cat_v7 = np.genfromtxt(f_path / cat_folder / f'{cat_name}_imgv7.0_stars.cat', names=True, dtype=None, encoding='utf-8')
-    # spf, filters = star_cutouts(len(cat_v7), cat_v7['ra'], cat_v7['dec'], cat_v7['id'], simbad=False, plot=True, JWST_only=True)
+    cat_v7 = np.genfromtxt(f_path / cat_folder / f'{cat_name}_imgv7.0_stars.cat', names=True, dtype=None, encoding='utf-8')
+    spf, filters = star_cutouts(len(cat_v7), cat_v7['ra'], cat_v7['dec'], cat_v7['id'], simbad=False, plot=False, HST_only=True)
+    build_psf(spf, filters)
 
 if __name__ == '__main__':
     main()
