@@ -14,6 +14,7 @@ plt.rcParams.update({
     "font.sans-serif": "helvetica"
 })
 import numpy as np
+from paths_and_global_vars import *
 import os
 
 
@@ -68,7 +69,7 @@ def plot_SED_and_filters(sed, filter_dict, z):
     colors = cmap(np.linspace(0,1,len(filter_dict))) # get a list of colors for the filters
     
     for (i, (filter_name, filter_path)) in enumerate(filter_dict.items()):
-        f = define_eazy_filter(filter_path)
+        f = define_eazy_filter(f_path / 'filter_throughputs' / filter_path)
         f_max_arr.append(f.wave.max())
         ax2.plot(f.wave, f.throughput, label=filter_name, lw=2,c=colors[i])
         ax2.fill_between(f.wave, f.throughput, alpha=0.2, color=colors[i])
@@ -110,31 +111,31 @@ template_list = templates.read_templates_file('templates/spline_templates_v3/c20
 print(template_list)
 # SED = '/Users/sam/eazy-photoz/templates/spline_templates_v3/spline_age0.31_av1.0.fits'
 
-os.chdir('/Users/sam/FRESCO/filter_throughputs')
-# Define the filters
-filter_dict = {'F336WU': 'HST_WFC3_UVIS1.F336W.dat',
-                'F435W': 'HST_ACS_WFC.F435W.dat',
-                'F475W': 'HST_ACS_WFC.F475W.dat',
-                'F606W': 'HST_ACS_WFC.F606W.dat',
-                'F606WU': 'HST_WFC3_UVIS1.F606W.dat',
-                'F775W': 'HST_ACS_WFC.F775W.dat',
-                'F814W': 'HST_ACS_WFC.F814W.dat',
-                'F814WU': 'HST_WFC3_UVIS1.F814W.dat',
-                'F850LP': 'HST_ACS_WFC.F850LP.dat',
-                'F850LPU': 'HST_WFC3_UVIS1.F850LP.dat',
-                'F105W': 'HST_WFC3_IR.F105W.dat',
-                'F110W': 'HST_WFC3_IR.F110W.dat',
-                'F125W': 'HST_WFC3_IR.F125W.dat',
-                'F140W': 'HST_WFC3_IR.F140W.dat',
-                'F160W': 'HST_WFC3_IR.F160W.dat',
-                'F182M': 'JWST_NIRCam.F182M.dat',
-                'F210M': 'JWST_NIRCam.F210M.dat',
-                'F430M': 'JWST_NIRCam.F430M.dat',
-                'F460M': 'JWST_NIRCam.F460M.dat',
-                'F480M': 'JWST_NIRCam.F480M.dat',
-                'F444W': 'JWST_NIRCam.F444W.dat',}
+# os.chdir('/Users/sam/FRESCO/filter_throughputs')
+# # Define the filters
+# filter_dict = {'F336WU': 'HST_WFC3_UVIS1.F336W.dat',
+#                 'F435W': 'HST_ACS_WFC.F435W.dat',
+#                 'F475W': 'HST_ACS_WFC.F475W.dat',
+#                 'F606W': 'HST_ACS_WFC.F606W.dat',
+#                 'F606WU': 'HST_WFC3_UVIS1.F606W.dat',
+#                 'F775W': 'HST_ACS_WFC.F775W.dat',
+#                 'F814W': 'HST_ACS_WFC.F814W.dat',
+#                 'F814WU': 'HST_WFC3_UVIS1.F814W.dat',
+#                 'F850LP': 'HST_ACS_WFC.F850LP.dat',
+#                 'F850LPU': 'HST_WFC3_UVIS1.F850LP.dat',
+#                 'F105W': 'HST_WFC3_IR.F105W.dat',
+#                 'F110W': 'HST_WFC3_IR.F110W.dat',
+#                 'F125W': 'HST_WFC3_IR.F125W.dat',
+#                 'F140W': 'HST_WFC3_IR.F140W.dat',
+#                 'F160W': 'HST_WFC3_IR.F160W.dat',
+#                 'F182M': 'JWST_NIRCam.F182M.dat',
+#                 'F210M': 'JWST_NIRCam.F210M.dat',
+#                 'F430M': 'JWST_NIRCam.F430M.dat',
+#                 'F460M': 'JWST_NIRCam.F460M.dat',
+#                 'F480M': 'JWST_NIRCam.F480M.dat',
+#                 'F444W': 'JWST_NIRCam.F444W.dat',}
 
 # for SED in template_list:
 #     plot_SED_and_filters(SED, filter_dict, 7)
 
-plot_SED_and_filters(template_list[2], filter_dict, 7)
+plot_SED_and_filters(template_list[2], filter_dict, 10)

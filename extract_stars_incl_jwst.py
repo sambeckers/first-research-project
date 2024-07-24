@@ -7,6 +7,7 @@ from astropy.nddata import Cutout2D
 from astropy.nddata.utils import NoOverlapError
 from astropy.stats import SigmaClip
 from photutils.psf import EPSFBuilder, EPSFStars, EPSFStar
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from astropy.visualization import simple_norm
@@ -76,7 +77,7 @@ def star_cutouts(cat_length, RA, DEC, ID, simbad=False, plot=True, HST_only=Fals
     num_cutouts = cat_length # Number of cutouts
     nrows, ncols = num_cutouts, num_images # Calculate the grid size for subplots (rows = num_cutouts, columns = num_images)
     if plot:
-        fig, axs = plt.subplots(nrows, ncols, figsize=(2 * ncols, 2 * nrows), dpi=450)
+        fig, axs = plt.subplots(nrows, ncols, figsize=(2 * ncols, 2 * nrows), dpi=300)
 
     EPSF_stars_per_filter = [[] for _ in range(num_images)] # List to store EPSF stars
     print(f'Generating cutouts for {cat_length} stars...')
@@ -121,7 +122,7 @@ def star_cutouts(cat_length, RA, DEC, ID, simbad=False, plot=True, HST_only=Fals
     if plot: 
         # Adjust layout to ensure space for labels
         plt.subplots_adjust(wspace=0.05, hspace=0.05)
-        plt.savefig(fig_path / f'{cat_name}_psf_star_cutouts_selected_v7.jpg', bbox_inches='tight')
+        plt.savefig(fig_path / 'psf' / f'{cat_name}_psf_star_cutouts_selected_v7.pdf', bbox_inches='tight')
         plt.show()
 
     return EPSF_stars_per_filter, filter_names
@@ -169,24 +170,48 @@ def build_psf(stars_per_filter, filter_names) -> None:
     # Initialize the EPSFBuilder w/ custom settings
     epsf_builder = EPSFBuilder(oversampling=1, norm_radius=10, sigma_clip=SigmaClip(sigma=5.0, maxiters=10), smoothing_kernel='quadratic', maxiters=50, progress_bar=True)
 
-    # Build the EPSF for each filter
-    for s_list, f in zip(stars_per_filter, filter_names):
-        stars = EPSFStars(s_list) # Create EPSFStars object
-        epsf, fitted_stars = epsf_builder.build_epsf(stars) # Build the EPSF
-        epsf_padded  = pad_to_even_shape(epsf.data) # Pad the EPSF to have an even shape (required by pypher)
-        if s_list != stars_per_filter[-1]: # Save the EPSF to a fits file for all filters except F444W (already made it's PSF with webbpsf)
-            hdu = fits.PrimaryHDU(data=epsf_padded.data)
-            hdu.writeto(f_path / 'psf' / f'{f}_PSF.fits', overwrite=True)
-            print(f'Saved {f} PSF to fits file')
+    num_filters = len(filter_names)
+    ncols = 4  # Number of columns for subplots
+    nrows = (num_filters + ncols - 1) // ncols  # Calculate number of rows needed
 
-        # Plot the EPSF (using photutils example code)
+    fig, axs = plt.subplots(nrows, ncols, figsize=(5 * ncols, 5 * nrows), dpi=300)
+    axs = axs.flatten()  # Flatten the 2D array of axes to 1D for easy iteration
+
+    # Build the EPSF for each filter and plot them
+    for i, (s_list, f) in enumerate(zip(stars_per_filter, filter_names)):
+        stars = EPSFStars(s_list)  # Create EPSFStars object
+        epsf, fitted_stars = epsf_builder.build_epsf(stars)  # Build the EPSF
+        epsf_padded  = pad_to_even_shape(epsf.data)  # Pad the EPSF to have an even shape (required by pypher)
+        
+        # if s_list != stars_per_filter[-1]:  # Save the EPSF to a fits file for all filters except F444W (already made its PSF with webbpsf)
+        hdu = fits.PrimaryHDU(data=epsf_padded)
+        hdu.writeto(f_path / 'psf' / f'{f}_PSF.fits', overwrite=True)
+        print(f'Saved {f} PSF to fits file')
+
+        # Plot the EPSF
         norm = simple_norm(epsf.data, 'log', percent=99.0)
-        plt.figure(dpi=450)
-        plt.imshow(epsf.data, origin='lower', cmap='plasma', norm=norm)
-        plt.colorbar(label='Fractional intensity per pixel', format=ticker.FuncFormatter(custom_format))
-        plt.title(f'{f} EPSF')
-        plt.savefig(fig_path / f'{f}_epsf.png', bbox_inches='tight')
-        plt.show()
+        ax = axs[i]
+        im = ax.imshow(epsf.data, origin='lower', cmap='plasma', norm=norm)
+        ax.set_title(f'{f} EPSF', color='white', fontsize=20)
+        ax.axis('off')
+
+        # Create colorbar that matches the image height
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        cbar = fig.colorbar(im, cax=cax)
+        cbar.ax.tick_params(labelsize=8)
+        cbar.set_label('Fractional intensity per pixel', fontsize=16, rotation=270, labelpad=15)
+        cbar.formatter.set_powerlimits((0, 0))
+        cbar.update_ticks()
+
+    # Hide any unused subplots
+    for j in range(i + 1, len(axs)):
+        fig.delaxes(axs[j])
+
+    # Adjust layout to ensure space for labels and colorbars
+    plt.tight_layout()
+    plt.savefig(fig_path / 'psf' / f'EPSFs.pdf', bbox_inches='tight')
+    plt.show()
 
     # Example for one filter:
     # stars = EPSFStars(stars_per_filter[-2])
@@ -198,7 +223,7 @@ def build_psf(stars_per_filter, filter_names) -> None:
     # plt.show()
 
 def main():
-    excluded_sources = [3, 11, 13, 16, 17, 21, 24, 27, 28, 29, 31, 32, 33, 34, 35, 36, 39, 42, 43, 46, 47] # index of sources to exclude
+    # excluded_sources = [3, 11, 13, 16, 17, 21, 24, 27, 28, 29, 31, 32, 33, 34, 35, 36, 39, 42, 43, 46, 47] # index of sources to exclude
 
     # # Load the SIMBAD catalog
     # cat = np.genfromtxt(f_path / cat_folder / 'FRESCO_simbad_stars.txt', delimiter='\t', names=True, dtype=None, encoding='utf-8')
@@ -213,7 +238,7 @@ def main():
 
     # Andrea's v7 star catalog
     cat_v7 = np.genfromtxt(f_path / cat_folder / f'{cat_name}_imgv7.0_stars.cat', names=True, dtype=None, encoding='utf-8')
-    spf, filters = star_cutouts(len(cat_v7), cat_v7['ra'], cat_v7['dec'], cat_v7['id'], simbad=False, plot=False, JWST_only=True)
+    spf, filters = star_cutouts(len(cat_v7), cat_v7['ra'], cat_v7['dec'], cat_v7['id'], simbad=False, plot=False)
     build_psf(spf, filters)
 
 if __name__ == '__main__':

@@ -29,7 +29,7 @@ f_path = '/Users/sam/Fresco/' # Path to the FRESCO directory
 
 # Define the parameters for the EAZY fitting
 params = {}
-params['CATALOG_FILE'] = f_path + 'catalogs_v2/gds_filtered.cat'
+params['CATALOG_FILE'] = f_path + 'catalogs_v3/gds_filtered.cat'
 params['CATALOG_FORMAT'] = 'ascii' # important to specify the format
 params['OUTPUT_DIRECTORY'] = f_path + 'eazy outputs'
 params['MAIN_OUTPUT_FILE'] = f_path + 'eazy outputs/gds_photoz.eazypy'

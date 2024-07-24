@@ -32,7 +32,7 @@ def get_cat_name_filter_numbers():
         catalog_names = catalog_file.read().splitlines()
         for cat_name in catalog_names:
             cat_names.append(cat_name)
-    return cat_names, [cat_name.split('_')[0][3:] for cat_name in cat_names]
+    return cat_names, [cat_name.split('_')[1].replace('.cat', '').lstrip('f') for cat_name in cat_names]
 
 def full_gds_catalog():
     """
@@ -44,8 +44,8 @@ def full_gds_catalog():
     # Read in the catalogs
     os.chdir(f_path / cat_folder)
     columns = [[[] for _ in range(len(cat_names))] for _ in range(20)] # 20 empty lists for each parameter, empty lists within for each filter
-    for idx, cat_name in enumerate(cat_names):
-        with open(cat_name, 'r') as catalog:
+    for idx, c_name in enumerate(cat_names):
+        with open(c_name, 'r') as catalog:
             for row in catalog:
                 if row.startswith('#'): # Skip comment lines that start with #
                     continue
@@ -186,7 +186,7 @@ def z_bin_selection(strictness):
         print(f'Filtered z_phot catalog saved.\nOriginal catalog: {len(cat_zphot)} sources \nFiltered catalog: {len(cat_zphot_filter)} sources, {len(cat_zphot) - len(cat_zphot_filter)} sources removed\n')
 
         # Plot the number of sources remaining as a function of the strictness
-        strictness_arr = np.linspace(0.01, 0.001, 100)
+        strictness_arr = np.linspace(0.01, 0.1, 100)
         num_sources = []
         for s in strictness_arr:
             sel = (cat_zphot['z_975'] - cat_zphot['z_025'])/(1 + cat_zphot['z_500'])/2 < s
@@ -239,10 +239,10 @@ def format_cc_sel_catalog():
             **{f'e_{filter}': flux_err[idx] for idx, filter in enumerate(filters)},
             **{f'MAG_APER_{filter}': mag_aper[idx] for idx, filter in enumerate(filters)}
         })
-        df.to_csv(f_path / cat_folder / f'{cat_name}_colourcut_sel_formatted.cat', sep=' ', index=False)
+        df.to_csv(f_path / cat_folder / f'{cat_name}_colour_sel_formatted.cat', sep=' ', index=False)
         print('Formatted colour-cut selection catalog saved\n')
     except FileNotFoundError:
-        print(f'{cat_name}_catalog_colourcut_sel.cat not found. Run colour_colour_cuts_v2.py first.')
+        print(f'{cat_name}_catalog_colour_sel.cat not found. Run colour_colour_cuts_v2.py first.')
 
 def final_catalog():
     try:
@@ -321,14 +321,14 @@ def main():
     Main function to run the catalog functions.
     Adjust the global constants to match the file paths on your system/catalog
     """
-    # full_gds_catalog()
-    # class_star_flags_nondetect_selection()
-    # photoz_catalog()
-    # z_bin_selection(0.006)
-    # z_phot_hist()
-    # format_cc_sel_catalog()
+    full_gds_catalog()
+    class_star_flags_nondetect_selection()
+    photoz_catalog()
+    z_bin_selection(0.06)
+    z_phot_hist()
+    format_cc_sel_catalog()
     # final_catalog()
-    cat_from_IDs()
+    # cat_from_IDs()
 
 if __name__ == '__main__':
     main()

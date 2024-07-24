@@ -51,8 +51,8 @@ def open_cats(cat_file):
     id = zout[1].data['id']
     nusefilt = zout[1].data['nusefilt']
 
-    filenames = open(f_path / f'names/{cat_name}-sci-filenames_ordered_incl_f444w.txt', 'r').read().splitlines()
-    images = [fits.open(f_path / reprojected / f)[0] for f in filenames] # save hdul for each image
+    filenames = open(f_path / f'names/{cat_name}_sci_filenames.txt', 'r').read().splitlines()
+    images = [fits.open(f_path / reprojected / f'reproj_crop_{f}')[0] for f in filenames] # save hdul for each image
     
     return self, cat, id, nusefilt, images
 
@@ -140,7 +140,7 @@ def main():
     global cc, fig_fits_path
     cc = True
     if cc:
-        fig_fits_path = fig_path / 'colour_colour_fits/'
+        fig_fits_path = fig_path / 'cc_fits_v2/'
         show_cat_fits(*open_cats(f'{cat_name}_colour_sel_formatted.cat'), f_names)
     else:
         fig_fits_path = fig_path / 'eazy_fits/'
