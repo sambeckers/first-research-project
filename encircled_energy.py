@@ -33,7 +33,7 @@ for p, ps, f in tqdm(zip(psf, pixelscl, f_names), total=len(psf)):
         ax.set_ylabel('Encircled Energy',fontsize=14)
         ax.legend(loc='lower right')
         ax.set_title(f)
-        plt.savefig(fig_path / 'encircled_energy' / f'{f}_EE.pdf')
+        plt.savefig(fig_path / 'psf' / 'encircled_energy' / f'{f}_EE.pdf')
     except KeyError:
         print('aaaa')
         header = hdul[0].header

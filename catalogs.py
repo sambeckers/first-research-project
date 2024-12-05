@@ -93,7 +93,7 @@ def full_gds_catalog():
 def class_star_flags_nondetect_selection():
     """
     Filter the catalog based on:
-    - CLASS_STAR_444w <= 0.9 (1.0 is a star)
+    - CLASS_STAR_444w < 0.8 (1.0 is a star)
     - FLAGS_444w <= 7 (accepts 1, 2, 4 and combinations)
     - f_444w/e_444w >= 5 (SNR >= 5)
     - Replace flux with -100.0 if flux and error are both zero (non-detection), s.t. EAZY will not observe it

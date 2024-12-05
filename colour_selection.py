@@ -143,7 +143,7 @@ def plot_source_color_and_save_cuts(slope):
     sel = (y>2) & (x<1) & (y>(slope*x+2)) # Boolean function of colour cut
     if hexbin:
         plt.hexbin(x[~sel], y[~sel], gridsize=1000, cmap='plasma', zorder=1, bins='log', alpha=0.9) #~ is the logical NOT operator
-        plt.scatter(x[sel], y[sel], marker='s', edgecolor='k', c='red', s=15, label=r'$z \geq 6$', zorder=2)
+        plt.scatter(x[sel], y[sel], marker='s', edgecolor='k', c='red', s=15, label=r'$z \geq 7$', zorder=2)
         print(f'Number of sources selected: {np.sum(sel)}')
         print(f'Highest y flux: {np.max(y[sel])}')
         print(f'Lowest x flux: {np.min(x[sel])}')

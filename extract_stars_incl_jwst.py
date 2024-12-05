@@ -183,7 +183,6 @@ def build_psf(stars_per_filter, filter_names) -> None:
         epsf, fitted_stars = epsf_builder.build_epsf(stars)  # Build the EPSF
         epsf_padded  = pad_to_even_shape(epsf.data)  # Pad the EPSF to have an even shape (required by pypher)
         
-        # if s_list != stars_per_filter[-1]:  # Save the EPSF to a fits file for all filters except F444W (already made its PSF with webbpsf)
         hdu = fits.PrimaryHDU(data=epsf_padded)
         hdu.writeto(f_path / 'psf' / f'{f}_PSF.fits', overwrite=True)
         print(f'Saved {f} PSF to fits file')
